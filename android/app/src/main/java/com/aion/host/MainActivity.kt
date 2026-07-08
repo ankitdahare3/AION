@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.aion.host.security.ApprovalGateService
+import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
 import com.aion.host.security.AuditLogger
 import com.aion.host.setup.SetupWizardScreen
@@ -33,11 +36,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var auditLogger: AuditLogger
 
+    @Inject
+    lateinit var approvalGateService: ApprovalGateService
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { AionApp(resumeTrigger, auditLogger) }
+        setContent { AionApp(resumeTrigger, auditLogger, approvalGateService) }
     }
 
     override fun onResume() {
@@ -50,24 +56,30 @@ class MainActivity : ComponentActivity() {
 private fun AionApp(
     resumeSignal: Int,
     auditLogger: AuditLogger,
+    approvalGateService: ApprovalGateService,
 ) {
     var showAuditLog by remember { mutableStateOf(false) }
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = { showAuditLog = !showAuditLog }) {
-                        Text(if (showAuditLog) "Back to Setup" else "Audit Log")
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = { showAuditLog = !showAuditLog }) {
+                            Text(if (showAuditLog) "Back to Setup" else "Audit Log")
+                        }
+                    }
+                    if (showAuditLog) {
+                        AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
+                    } else {
+                        SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
                     }
                 }
-                if (showAuditLog) {
-                    AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
-                } else {
-                    SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
-                }
+                // SR-01/02 — sits above everything else; shows itself only when a side-effect
+                // action is actually pending approval (none exist yet, ExecutorAgent is T-051).
+                ApprovalSheetHost(approvalGateService)
             }
         }
     }
