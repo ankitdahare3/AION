@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android / IDE
+local.properties
+*.iml
+.idea/
+captures/
+.cxx/
+
+# Secrets — never commit (CLAUDE.md rule 4)
+*.keystore
+*.jks
+.env
+providers.local.yaml
+
+# Model weights (models/ keeps registry.json + checksums only)
+models/*.gguf
+models/*.onnx
+models/*.bin
