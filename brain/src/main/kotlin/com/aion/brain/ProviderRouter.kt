@@ -1,13 +1,34 @@
 package com.aion.brain
 
 interface ScoreStore {
-    fun taskScore(id: String, t: TaskType): Double
+    fun taskScore(
+        id: String,
+        t: TaskType,
+    ): Double
+
     fun latencyNorm(id: String): Double
+
     fun notInCooldown(id: String): Boolean
-    fun recordSuccess(id: String, t: TaskType, latencyMs: Long, cost: Double)
-    fun recordFailure(id: String, t: TaskType, e: ProviderFailure)
+
+    fun recordSuccess(
+        id: String,
+        t: TaskType,
+        latencyMs: Long,
+        cost: Double,
+    )
+
+    fun recordFailure(
+        id: String,
+        t: TaskType,
+        e: ProviderFailure,
+    )
 }
-interface BudgetGuard { fun canSpend(req: BrainRequest): Boolean; fun record(cost: Double) }
+
+interface BudgetGuard {
+    fun canSpend(req: BrainRequest): Boolean
+
+    fun record(cost: Double)
+}
 
 /** DOC-013 Provider Router — scoring + failover. */
 class ProviderRouter(
@@ -16,12 +37,13 @@ class ProviderRouter(
     private val budget: BudgetGuard,
 ) {
     suspend fun route(req: BrainRequest): BrainResult {
-        val candidates = registry
-            .filter { it.caps.tools || req.toolSchemas.isEmpty() }
-            .filter { !req.needsVision || it.caps.vision }
-            .filter { scores.notInCooldown(it.id) }
-            .sortedByDescending { score(it, req) }
-            .take(3)
+        val candidates =
+            registry
+                .filter { it.caps.tools || req.toolSchemas.isEmpty() }
+                .filter { !req.needsVision || it.caps.vision }
+                .filter { scores.notInCooldown(it.id) }
+                .sortedByDescending { score(it, req) }
+                .take(3)
         require(candidates.isNotEmpty()) { "No provider available for ${req.taskType}" }
 
         var last: Exception? = null
@@ -41,11 +63,19 @@ class ProviderRouter(
         throw last ?: IllegalStateException("Routing failed")
     }
 
-    private fun score(p: Provider, req: BrainRequest): Double {
-        val tierW = when (p.tier) { Tier.LOCAL -> 1.0; Tier.FREE -> 0.7; Tier.PAID -> 0.3 }
+    private fun score(
+        p: Provider,
+        req: BrainRequest,
+    ): Double {
+        val tierW =
+            when (p.tier) {
+                Tier.LOCAL -> 1.0
+                Tier.FREE -> 0.7
+                Tier.PAID -> 0.3
+            }
         return 0.4 * scores.taskScore(p.id, req.taskType) +
-               0.3 * tierW +
-               0.2 * (1.0 - scores.latencyNorm(p.id)) +
-               0.1 * (if (p.tier == Tier.LOCAL) 1.0 else 0.0)
+            0.3 * tierW +
+            0.2 * (1.0 - scores.latencyNorm(p.id)) +
+            0.1 * (if (p.tier == Tier.LOCAL) 1.0 else 0.0)
     }
 }

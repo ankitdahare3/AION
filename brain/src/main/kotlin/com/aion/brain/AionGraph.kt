@@ -1,7 +1,13 @@
 package com.aion.brain
 
 /** DOC-004 AION Graph — checkpointed state-graph orchestrator. */
-data class PlanStep(val action: String, val target: String, val expected: String, val sideEffect: Boolean)
+data class PlanStep(
+    val action: String,
+    val target: String,
+    val expected: String,
+    val sideEffect: Boolean,
+)
+
 data class AgentState(
     val goal: String,
     val plan: List<PlanStep> = emptyList(),
@@ -14,9 +20,17 @@ data class AgentState(
     val response: String? = null,
 )
 
-fun interface Agent { suspend fun step(s: AgentState): AgentState }
-fun interface ApprovalGate { suspend fun await(s: AgentState): AgentState }
-fun interface Checkpointer { fun save(s: AgentState) }
+fun interface Agent {
+    suspend fun step(s: AgentState): AgentState
+}
+
+fun interface ApprovalGate {
+    suspend fun await(s: AgentState): AgentState
+}
+
+fun interface Checkpointer {
+    fun save(s: AgentState)
+}
 
 class AionGraph(
     private val nodes: Map<String, Agent>,
@@ -36,5 +50,8 @@ class AionGraph(
         }
         return s
     }
-    companion object { const val END = "__end__" }
+
+    companion object {
+        const val END = "__end__"
+    }
 }
