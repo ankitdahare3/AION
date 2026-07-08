@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DOC-016 §3 — no MDM-style policies (force-lock, wipe, password rules) are requested.
+     Device Owner status alone is sufficient for AION's planned use (silent permission grants,
+     persistence); this device is personal, not enterprise-managed. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

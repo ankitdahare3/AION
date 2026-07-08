@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AION</string>
+    <string name="device_admin_label">AION Device Owner</string>
+    <string name="device_admin_description">Lets AION run persistently and manage its own permissions on this dedicated device. Never used to hide activity from you (DOC-016 §3).</string>
+</resources>
