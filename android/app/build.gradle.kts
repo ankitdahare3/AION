@@ -25,6 +25,11 @@ android {
     }
 }
 
+ksp {
+    // Room DOC-019 §1 — export schema JSON for future migration testing (T-060).
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(project(":brain"))
 
@@ -46,4 +51,7 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

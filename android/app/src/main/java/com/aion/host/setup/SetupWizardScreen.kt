@@ -19,19 +19,28 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.aion.host.security.AuditLogger
+import kotlinx.coroutines.launch
 
 /**
  * DOC-016 §5, T-004 — walks the owner through every PR-02 permission. [resumeSignal] is bumped
- * by MainActivity.onResume() so statuses re-check after returning from a Settings screen.
+ * by MainActivity.onResume() so statuses re-check after returning from a Settings screen. Every
+ * tap is audited (DOC-017 §4: every action goes through the hash-chained log).
  */
 @Composable
-fun SetupWizardScreen(resumeSignal: Int) {
+fun SetupWizardScreen(
+    resumeSignal: Int,
+    auditLogger: AuditLogger,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var statuses by remember {
         mutableStateOf(SetupPermission.entries.associateWith { it.isGranted(context) })
     }
@@ -43,9 +52,16 @@ fun SetupWizardScreen(resumeSignal: Int) {
     val micPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             statuses = statuses + (SetupPermission.MICROPHONE to granted)
+            scope.launch {
+                auditLogger.record(
+                    "user",
+                    "setup.permission.result",
+                    """{"permission":"MICROPHONE","granted":$granted}""",
+                )
+            }
         }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Text("AION Setup", style = MaterialTheme.typography.headlineSmall)
         Text(
             "Grant these before AION can act (DOC-002 PR-02). Tap a row to open it.",
@@ -58,6 +74,13 @@ fun SetupWizardScreen(resumeSignal: Int) {
                     permission = permission,
                     granted = statuses[permission] == true,
                     onClick = {
+                        scope.launch {
+                            auditLogger.record(
+                                "user",
+                                "setup.permission.tap",
+                                """{"permission":"${permission.name}"}""",
+                            )
+                        }
                         if (permission == SetupPermission.MICROPHONE) {
                             micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         } else {

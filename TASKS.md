@@ -9,7 +9,7 @@ Work top-to-bottom. 🧍 = human checkpoint. Milestones: 🏆
 [~] T-004 (DOC-016§3) AdminReceiver + provisioning flow + setup wizard screens (permission walkthrough) — AC: emulator: app requests all PR-02 permissions; script updated 🧍HC-1 — emulator portion ✅ verified 2026-07-09 (all 7 PR-02 rows render; Overlay deep-link and Microphone runtime-permission-dialog both confirmed live on aion_test AVD, granting updates UI state); ⚠️ 🧍HC-1 (owner runs actual Device Owner provisioning on the physical dedicated phone) NOT done — that step is the owner's, per CLAUDE.md checkpoint rules
 
 ## EPIC 1 — Safety Core (BEFORE anything acts)
-[ ] T-020 (DOC-017§4, DOC-019) audit_log table, hash-chained AuditLogger + viewer screen — AC: unit test verifies chain tamper detection
+[x] T-020 (DOC-017§4, DOC-019) audit_log table, hash-chained AuditLogger + viewer screen — AC: unit test verifies chain tamper detection ✅ verified 2026-07-09: AuditChainTest (7 cases incl. payload/action tampering, entry deletion, reordering) all pass; also verified live on aion_test AVD — Room+Hilt DI boots clean, a real setup-wizard tap wrote an audit entry, viewer screen displayed it, "Verify chain" returned Intact
 [ ] T-021 (SR-01/02) ApprovalGate service + Compose approval sheet (voice line + tap confirm) — AC: suspend fun blocks until decision; decision audited
 [ ] T-022 (SR-03) Kill-switch: overlay button + "aion stop" hook halts dispatcher <1s — AC: instrumented test
 [ ] T-023 (DOC-004§6) InjectionFilter: <screen_data> wrapper + imperative stripper — AC: unit tests with 20 injection strings, 0 pass-through
