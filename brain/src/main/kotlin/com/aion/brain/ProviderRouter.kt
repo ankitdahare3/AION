@@ -47,8 +47,12 @@ class ProviderRouter(
         require(candidates.isNotEmpty()) { "No provider available for ${req.taskType}" }
 
         var last: Exception? = null
+        var budgetBlocked = 0
         for (p in candidates) {
-            if (p.tier == Tier.PAID && !budget.canSpend(req)) continue
+            if (p.tier == Tier.PAID && !budget.canSpend(req)) {
+                budgetBlocked++
+                continue
+            }
             try {
                 val t0 = System.currentTimeMillis()
                 val res = p.complete(req)
@@ -60,7 +64,13 @@ class ProviderRouter(
                 last = e
             }
         }
-        throw last ?: IllegalStateException("Routing failed")
+        throw last ?: IllegalStateException(
+            if (budgetBlocked == candidates.size) {
+                "Routing failed for ${req.taskType}: all ${candidates.size} candidate(s) are PAID-tier and budget-exhausted"
+            } else {
+                "Routing failed for ${req.taskType}: no candidate could be reached"
+            },
+        )
     }
 
     private fun score(

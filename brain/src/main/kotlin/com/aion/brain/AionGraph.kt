@@ -39,6 +39,13 @@ class AionGraph(
     private val checkpoints: Checkpointer,
     private val maxSteps: Int = 30,
 ) {
+    init {
+        require(nodes.containsKey("planner")) { "AionGraph requires a 'planner' node (run() starts there)" }
+        require(nodes.containsKey("reflector")) {
+            "AionGraph requires a 'reflector' node (run() routes there when maxSteps is exceeded)"
+        }
+    }
+
     suspend fun run(initial: AgentState): AgentState {
         var s = initial
         var node = "planner"
