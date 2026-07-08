@@ -4,7 +4,7 @@ Work top-to-bottom. 🧍 = human checkpoint. Milestones: 🏆
 
 ## EPIC 0 — Repo & CI
 [x] T-001 (DOC-020) Complete Gradle setup: root build.gradle.kts, version catalog, wrapper; :android:app + :brain compile — AC: `./gradlew assembleDebug` succeeds ✅ verified 2026-07-08, BUILD SUCCESSFUL in 2m16s, apk at android/app/build/outputs/apk/debug/app-debug.apk
-[x] T-002 Add Hilt, Room, kotlinx.serialization, Compose BOM wiring — AC: clean build, sample @HiltAndroidApp boots in emulator ✅ clean build verified 2026-07-08 (BUILD SUCCESSFUL, kspDebugKotlin/hiltAggregateDepsDebug/hiltJavaCompileDebug all ran); ⚠️ "boots in emulator" NOT verified — no AVD/physical device on this machine, see PROGRESS.md
+[x] T-002 Add Hilt, Room, kotlinx.serialization, Compose BOM wiring — AC: clean build, sample @HiltAndroidApp boots in emulator ✅ fully verified 2026-07-09: AVD "aion_test" (Pixel 5, API 31) created, app installed + launched, MainActivity resumed, no crash, no Hilt/ComponentTreeDeps errors in logcat, screenshot confirms rendered UI
 [x] T-003 GitHub Actions CI: build + unit tests + ktlint — AC: green pipeline on push ✅ verified 2026-07-08: pushed to private repo github.com/ankitdahare3/AION (main), CI run succeeded in 5m37s — https://github.com/ankitdahare3/AION/actions/runs/28962379819
 [ ] T-004 (DOC-016§3) AdminReceiver + provisioning flow + setup wizard screens (permission walkthrough) — AC: emulator: app requests all PR-02 permissions; script updated 🧍HC-1
 
