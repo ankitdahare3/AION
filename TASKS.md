@@ -11,7 +11,7 @@ Work top-to-bottom. 🧍 = human checkpoint. Milestones: 🏆
 ## EPIC 1 — Safety Core (BEFORE anything acts)
 [x] T-020 (DOC-017§4, DOC-019) audit_log table, hash-chained AuditLogger + viewer screen — AC: unit test verifies chain tamper detection ✅ verified 2026-07-09: AuditChainTest (7 cases incl. payload/action tampering, entry deletion, reordering) all pass; also verified live on aion_test AVD — Room+Hilt DI boots clean, a real setup-wizard tap wrote an audit entry, viewer screen displayed it, "Verify chain" returned Intact
 [x] T-021 (SR-01/02) ApprovalGate service + Compose approval sheet (voice line + tap confirm) — AC: suspend fun blocks until decision; decision audited ✅ verified 2026-07-09: ApprovalGateServiceTest (3 cases: blocks-until-resolve, approve audited, deny audited+clears pending) all pass; app boots clean on aion_test AVD with ApprovalSheetHost + Hilt-injected ApprovalGateService in the tree (no caller yet — ExecutorAgent wiring is T-051)
-[ ] T-022 (SR-03) Kill-switch: overlay button + "aion stop" hook halts dispatcher <1s — AC: instrumented test
+[x] T-022 (SR-03) Kill-switch: overlay button + "aion stop" hook halts dispatcher <1s — AC: instrumented test ✅ verified 2026-07-09: KillSwitchInstrumentedTest (3/3 pass on aion_test AVD via real Hilt DI) — triggerHaltsWithinOneSecond measured 219ms; also live-verified the actual overlay: real WindowManager STOP button tapped on-device, audit log shows `killswitch.trigger {"source":"overlay"}` seq=3
 [ ] T-023 (DOC-004§6) InjectionFilter: <screen_data> wrapper + imperative stripper — AC: unit tests with 20 injection strings, 0 pass-through
 [ ] T-024 (SR-08) SecretVault over Android Keystore; settings screen for API keys — AC: keys survive restart, absent from logs/backups
 

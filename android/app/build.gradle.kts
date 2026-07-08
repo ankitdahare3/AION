@@ -16,6 +16,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0-alpha"
+        // T-022: HiltTestRunner swaps in HiltTestApplication so @HiltAndroidTest works on-device.
+        testInstrumentationRunner = "com.aion.host.HiltTestRunner"
     }
     buildFeatures { compose = true }
     kotlinOptions { jvmTarget = "17" }
@@ -54,4 +56,12 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
 }

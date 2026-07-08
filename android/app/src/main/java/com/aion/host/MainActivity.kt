@@ -1,5 +1,6 @@
 package com.aion.host
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
 import com.aion.host.security.AuditLogger
+import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.setup.SetupWizardScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -59,6 +62,9 @@ private fun AionApp(
     approvalGateService: ApprovalGateService,
 ) {
     var showAuditLog by remember { mutableStateOf(false) }
+    var overlayRunning by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -67,6 +73,13 @@ private fun AionApp(
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
+                        TextButton(onClick = {
+                            overlayRunning = !overlayRunning
+                            val intent = Intent(context, KillSwitchOverlayService::class.java)
+                            if (overlayRunning) context.startService(intent) else context.stopService(intent)
+                        }) {
+                            Text(if (overlayRunning) "Hide Kill-Switch" else "Show Kill-Switch")
+                        }
                         TextButton(onClick = { showAuditLog = !showAuditLog }) {
                             Text(if (showAuditLog) "Back to Setup" else "Audit Log")
                         }

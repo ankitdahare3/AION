@@ -48,6 +48,10 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".security.KillSwitchOverlayService"
+            android:exported="false" />
+
     </application>
 
 </manifest>
