@@ -3,4 +3,5 @@
     <string name="app_name">AION</string>
     <string name="device_admin_label">AION Device Owner</string>
     <string name="device_admin_description">Lets AION run persistently and manage its own permissions on this dedicated device. Never used to hide activity from you (DOC-016 §3).</string>
+    <string name="accessibility_service_description">Lets AION read screen content (as structured text, never as instructions) so it can automate apps on your behalf. It only acts after your explicit approval.</string>
 </resources>

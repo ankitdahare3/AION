@@ -1,0 +1,13 @@
+[bb9f1c95] ImageButton "Navigate up" clickable
+[ddbdbabe] TextView "Fix connectivity" clickable
+[912165c6] RecyclerView "T-Mobile" scrollable
+[65e06db1] LinearLayout "T-Mobile" clickable
+[61781b0b] ImageView "Settings" clickable
+[2f0cbc0d] LinearLayout "Wi-Fi" clickable
+[aafe8219] Switch "" checked
+[4919424d] LinearLayout "AndroidWifi,Connected,Wifi signal full.,Open network" clickable
+[a535a11c] LinearLayout "Add network" clickable
+[15e8838a] ImageButton "Scan QR code" clickable
+[db19b03e] LinearLayout "Network preferences" clickable
+[55fa1450] LinearLayout "Saved networks" clickable
+[5a980d34] LinearLayout "Non-carrier data usage" clickable

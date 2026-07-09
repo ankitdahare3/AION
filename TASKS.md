@@ -32,7 +32,7 @@ Work top-to-bottom. 🧍 = human checkpoint. Milestones: 🏆
 [ ] T-035 Wire voice→router→voice: bilingual chat, offline falls to local — AC: airplane-mode chat works 🏆 S3 exit 🧍HC-4
 
 ## EPIC 4 — Hands (S4)
-[ ] T-040 (DOC-009§2) AionAccessibilityService + A11yTreeReader → structured text ≤2000 tokens — AC: golden-file tests on 5 recorded trees
+[x] T-040 (DOC-009§2) AionAccessibilityService + A11yTreeReader → structured text ≤2000 tokens — AC: golden-file tests on 5 recorded trees ✅ verified 2026-07-09: A11yTreeReader compresses interactive-only nodes to ≤2000-token structured text (id/role/text/states), reusing :brain's ContextBuilder.estimateTokens; 5 golden fixtures are REAL `uiautomator dump` captures off aion_test (launcher home, Settings, Wi-Fi, our own AION app, Contacts), 3/3 test classes pass (exact golden match, determinism, token-budget); two real bugs found+fixed during golden-output review before locking fixtures (Compose label fallback via firstDescendantText DFS; trailing-whitespace on empty-states lines). Live device proof beyond manifest-merge: installed APK on aion_test, launched `android.settings.ACCESSIBILITY_SETTINGS`, `uiautomator dump` shows "AION" listed as a toggleable entry (state Off, pending owner's manual enable) — confirms AionAccessibilityService is genuinely OS-discoverable, not just declared
 [ ] T-041 ActionDispatcher: tap/longPress/swipe/scrollTo/type/global; rate limiter 300ms — AC: instrumented tests on emulator Settings app
 [ ] T-042 ElementResolver: id→fuzzy-text chain + confidence — AC: 95% resolution on golden trees
 [ ] T-043 ShizukuBridge (input/am/pm ops) with permission gating — AC: graceful degrade when Shizuku absent

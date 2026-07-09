@@ -1,0 +1,14 @@
+[fd445467] ImageView "Profile picture, double tap to open Google Account" clickable
+[cffe0100] ViewGroup "Search settings" clickable
+[9a4bc789] ImageButton ""
+[1f7dc5a6] ScrollView "Network & internet" scrollable
+[6c32d643] LinearLayout "Network & internet"
+[4b607818] RecyclerView "Network & internet"
+[6c32d643] LinearLayout "Network & internet" clickable
+[99149c9d] LinearLayout "Connected devices" clickable
+[b45cdb7b] LinearLayout "Apps" clickable
+[77102e44] LinearLayout "Notifications" clickable
+[8b359a18] LinearLayout "Battery" clickable
+[25789a6e] LinearLayout "Storage" clickable
+[60ae2c32] LinearLayout "Sound & vibration" clickable
+[d9b6c8c5] LinearLayout "" clickable

@@ -1,0 +1,5 @@
+[1f2b2d90] ImageButton "Open navigation drawer" clickable
+[c1361bec] ScrollView "Your contacts list is empty"
+[be76ba79] Button "ADD ACCOUNT" clickable
+[797439a6] Button "IMPORT" clickable
+[3f308531] ImageButton "Create new contact" clickable

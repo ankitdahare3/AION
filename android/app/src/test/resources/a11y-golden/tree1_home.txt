@@ -1,0 +1,7 @@
+[29c86707] ScrollView "Thu, Jul 9" scrollable
+[bf47b87f] ViewPager "Thu, Jul 9"
+[17e9c58e] LinearLayout "Thu, Jul 9" clickable
+[34b04a80] TextView "Messages" clickable
+[18e78015] TextView "Chrome" clickable
+[877b21d0] FrameLayout "Search" clickable
+[3cb143a2] ImageView "Voice search" clickable
