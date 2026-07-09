@@ -25,7 +25,7 @@ Work top-to-bottom. 🧍 = human checkpoint. Milestones: 🏆
 
 ## EPIC 3 — Brain Online (S3)
 [x] T-030 (DOC-013) providers.yaml loader + ScoreStore(Room-backed) + BudgetGuard impl — AC: unit tests for cooldowns/failover/budget ✅ verified 2026-07-09: 40/40 tests pass across :brain (ScoringMathTest, ProvidersConfigLoaderTest + existing AionGraph/ProviderRouter) and :android:app (RoomScoreStoreTest, RoomBudgetGuardTest + existing EPIC 1 suites), 0 failures/errors. Cooldown (auth/quota 6h, rate-limit backoff), failover (repeated failures drop score below a healthy candidate's), and budget-ceiling behavior all covered against real Room-backed implementations (Fake DAOs, not mocks of the logic itself)
-[ ] T-031 🧍HC-3 Adapters: OpenAI-compat (covers Groq/OpenRouter/Ollama), Gemini — AC: live smoke test each (owner keys)
+[~] T-031 🧍HC-3 Adapters: OpenAI-compat (covers Groq/OpenRouter/Ollama), Gemini — AC: live smoke test each (owner keys) — code done and verified 2026-07-09: OpenAiCompatProvider + GeminiProvider (Ktor-based), 10/10 tests pass against MockEngine (success parsing + cost calc, all 6 ProviderFailure mappings, malformed/empty-response handling); ⚠️ 🧍HC-3 (live smoke test with owner's real API keys) NOT done — needs the owner to enter keys via T-024's SecretsScreen, that's their step per CLAUDE.md checkpoint rules
 [ ] T-032 (DOC-014) llama.cpp JNI in :inference + model manifest download UI (Qwen3-4B int4) — AC: decode ≥12 tok/s on device / measured on emulator host
 [ ] T-033 IntentClassifier (local): CHAT/SIMPLE_ACTION/MULTI_STEP/INFO/SYSTEM — AC: ≥90% on 100-utterance labeled set (create set)
 [ ] T-034 ContextBuilder v1 (persona+safety prefix, history N=6, budget 8K) — AC: token budget never exceeded (unit tests)

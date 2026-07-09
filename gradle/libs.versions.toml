@@ -25,7 +25,12 @@ androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
 androidxTestCore = "1.7.0"
 securityCrypto = "1.1.0"
+# kaml has no such constraint (pure text/YAML parsing, no compiled-metadata coupling).
 kaml = "0.104.0"
+# Ktor 3.1.3+ moved to Kotlin 2.2/2.3 (compiled .kotlin_module metadata becomes binary-incompatible
+# with our Kotlin 2.1.21 pin — "Module was compiled with an incompatible version of Kotlin").
+# 3.1.2 is the last release built against Kotlin 2.1.20, matching our project's Kotlin version.
+ktor = "3.1.2"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -52,6 +57,11 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 kaml = { group = "com.charleskorn.kaml", name = "kaml", version.ref = "kaml" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
