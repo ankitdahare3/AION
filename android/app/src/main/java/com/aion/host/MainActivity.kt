@@ -29,9 +29,13 @@ import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
 import com.aion.host.security.AuditLogger
 import com.aion.host.security.KillSwitchOverlayService
+import com.aion.host.security.SecretVault
+import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+
+private enum class Screen { SETUP, AUDIT_LOG, API_KEYS }
 
 /** DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen. */
 @AndroidEntryPoint
@@ -42,11 +46,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var approvalGateService: ApprovalGateService
 
+    @Inject
+    lateinit var secretVault: SecretVault
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { AionApp(resumeTrigger, auditLogger, approvalGateService) }
+        setContent { AionApp(resumeTrigger, auditLogger, approvalGateService, secretVault) }
     }
 
     override fun onResume() {
@@ -60,8 +67,9 @@ private fun AionApp(
     resumeSignal: Int,
     auditLogger: AuditLogger,
     approvalGateService: ApprovalGateService,
+    secretVault: SecretVault,
 ) {
-    var showAuditLog by remember { mutableStateOf(false) }
+    var screen by remember { mutableStateOf(Screen.SETUP) }
     var overlayRunning by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -80,14 +88,21 @@ private fun AionApp(
                         }) {
                             Text(if (overlayRunning) "Hide Kill-Switch" else "Show Kill-Switch")
                         }
-                        TextButton(onClick = { showAuditLog = !showAuditLog }) {
-                            Text(if (showAuditLog) "Back to Setup" else "Audit Log")
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.API_KEYS) Screen.SETUP else Screen.API_KEYS
+                        }) {
+                            Text(if (screen == Screen.API_KEYS) "Back to Setup" else "API Keys")
+                        }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.AUDIT_LOG) Screen.SETUP else Screen.AUDIT_LOG
+                        }) {
+                            Text(if (screen == Screen.AUDIT_LOG) "Back to Setup" else "Audit Log")
                         }
                     }
-                    if (showAuditLog) {
-                        AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
-                    } else {
-                        SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
+                    when (screen) {
+                        Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
+                        Screen.API_KEYS -> SecretsScreen(secretVault, auditLogger, modifier = Modifier.weight(1f))
+                        Screen.SETUP -> SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
                     }
                 }
                 // SR-01/02 — sits above everything else; shows itself only when a side-effect
