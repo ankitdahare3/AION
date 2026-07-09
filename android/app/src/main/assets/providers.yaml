@@ -1,0 +1,108 @@
+# DOC-013 §1 — launch-set provider registry. Adapters (T-031) read this to build the actual
+# Provider instances passed to ProviderRouter; this file alone changes nothing in-app.
+providers:
+  - id: local-llamacpp
+    kind: local
+    models: [qwen3-4b-int4]
+    caps:
+      vision: false
+      tools: true
+      context: 8192
+      stream: true
+    tier: local
+    privacy: on_device
+
+  - id: groq
+    kind: openai_compat
+    endpoint: https://api.groq.com/openai/v1
+    models: [llama-3.3-70b-versatile]
+    caps:
+      tools: true
+      context: 32768
+      stream: true
+    cost:
+      in: 0.05
+      out: 0.08
+    tier: free
+    privacy: cloud
+
+  - id: openrouter-free
+    kind: openai_compat
+    endpoint: https://openrouter.ai/api/v1
+    models: [meta-llama/llama-3.3-70b-instruct:free]
+    caps:
+      tools: true
+      context: 32768
+      stream: true
+    tier: free
+    privacy: cloud
+
+  - id: gemini
+    kind: google
+    endpoint: https://generativelanguage.googleapis.com/v1beta
+    models: [gemini-2.5-flash]
+    caps:
+      vision: true
+      tools: true
+      context: 1048576
+      stream: true
+    cost:
+      in: 0.075
+      out: 0.30
+    tier: paid
+    privacy: cloud
+
+  - id: openai
+    kind: openai_compat
+    endpoint: https://api.openai.com/v1
+    models: [gpt-4o-mini]
+    caps:
+      vision: true
+      tools: true
+      context: 128000
+      stream: true
+    cost:
+      in: 0.15
+      out: 0.60
+    tier: paid
+    privacy: cloud
+
+  - id: anthropic
+    kind: anthropic
+    endpoint: https://api.anthropic.com/v1
+    models: [claude-haiku-4-5]
+    caps:
+      vision: true
+      tools: true
+      context: 200000
+      stream: true
+    cost:
+      in: 1.00
+      out: 5.00
+    tier: paid
+    privacy: cloud
+
+  - id: deepseek
+    kind: openai_compat
+    endpoint: https://api.deepseek.com/v1
+    models: [deepseek-chat]
+    caps:
+      tools: true
+      context: 64000
+      stream: true
+    cost:
+      in: 0.28
+      out: 0.42
+    tier: paid
+    privacy: cloud
+
+  - id: ollama-lan
+    kind: openai_compat
+    endpoint: http://192.168.1.100:11434/v1
+    models: [llama3.1]
+    caps:
+      tools: true
+      context: 8192
+      stream: true
+    tier: free
+    privacy: on_device
