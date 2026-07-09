@@ -35,6 +35,9 @@ object A11yTreeReader {
     /** Convenience: [read] then [toStructuredText] in one call. */
     fun compress(root: A11yNode): String = toStructuredText(read(root))
 
+    /** The stable id a single node would get, per the same rule [read] applies during the walk. */
+    fun idOf(node: A11yNode): String = toElementRef(node).id
+
     private fun collectInteractive(
         node: A11yNode,
         out: MutableList<ElementRef>,

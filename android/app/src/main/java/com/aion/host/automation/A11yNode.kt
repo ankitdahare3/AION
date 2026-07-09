@@ -8,6 +8,9 @@ data class Bounds(
     val bottom: Int,
 )
 
+/** False for off-screen/stale nodes (negative coordinates) — not safe to compute a tap/swipe point from. */
+fun Bounds.isOnScreen(): Boolean = left >= 0 && top >= 0
+
 /**
  * DOC-009 §2 — an Android-independent mirror of the fields we need from
  * `android.view.accessibility.AccessibilityNodeInfo`. [AionAccessibilityService] maps the real
