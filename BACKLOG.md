@@ -19,3 +19,17 @@
   reader (T-040), and PluginManager (T-070+) don't exist yet. Add each as its own budgeted section
   once its source system ships — `BuiltContext`'s shape shouldn't need to change, just the budget
   split.
+
+- **`DispatcherActionExecutor` (T-051) can't execute `type`/`swipe`/`scrollTo` plan steps.** The
+  frozen `PlanStep` (`action, target, expected, sideEffect`) has no field for typed text or a swipe
+  direction/distance, so there's no honest way to derive them from a plan step alone — currently
+  returns a clear "not yet supported" `ExecutionOutcome` instead of guessing. Needs either an ADR
+  to add a field to `PlanStep`, or a convention for encoding it into `target` (e.g.
+  `"message box::running late"`) that `PlannerAgent`'s prompt and `DispatcherActionExecutor`'s
+  parsing both agree on. Revisit once a real goal actually needs typed input (e.g. "send a message
+  saying...") to drive the design instead of guessing ahead of need.
+
+- **`PlannerAgent` (T-050) doesn't use `ContextBuilder`'s persona+safety prefix** — it has its own
+  minimal, self-contained planning instructions. Wire it once the real AION persona/safety-rules
+  text exists as an actual constant somewhere (currently only test-literal placeholders exist);
+  likely lands alongside T-053's full graph wiring.
