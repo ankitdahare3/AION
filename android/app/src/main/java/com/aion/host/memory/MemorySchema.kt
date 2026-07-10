@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Update
 
 /** DOC-019 §1 — v1 schema, T-060: conversations/turns/memories/episodes/skills/element_maps/plugins. */
 @Entity(tableName = "conversations")
@@ -122,6 +123,13 @@ interface MemoryDao {
 
     @Query("SELECT * FROM memories WHERE deletedSoft = 0 ORDER BY created DESC")
     suspend fun getAllActive(): List<MemoryEntity>
+
+    /** T-111 — consolidation's merge/decay updates go through this, not a raw DAO write elsewhere. */
+    @Update
+    suspend fun update(memory: MemoryEntity)
+
+    @Query("UPDATE memories SET deletedSoft = 1 WHERE id = :id")
+    suspend fun softDelete(id: Long)
 }
 
 @Dao

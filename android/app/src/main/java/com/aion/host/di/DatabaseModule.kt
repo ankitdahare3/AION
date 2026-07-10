@@ -7,6 +7,7 @@ import com.aion.host.brain.GraphCheckpointDao
 import com.aion.host.brain.ProviderStatsDao
 import com.aion.host.memory.ElementMapDao
 import com.aion.host.memory.EpisodeDao
+import com.aion.host.memory.MemoryDao
 import com.aion.host.memory.SkillDao
 import com.aion.host.security.AionDatabase
 import com.aion.host.security.AuditDao
@@ -58,4 +59,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSkillDao(db: AionDatabase): SkillDao = db.skillDao()
+
+    @Provides
+    fun provideMemoryDao(db: AionDatabase): MemoryDao = db.memoryDao()
 }

@@ -12,18 +12,23 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.aion.brain.DreamModeGuard
+import com.aion.brain.MemoryConsolidator
+import com.aion.brain.MemoryStore
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 
 /**
- * DOC-008 §5 — Dream Mode's WorkManager job. T-110 is the constrained-job + budget-guard scaffold
- * only: T-111 (consolidation), T-112 (scorecards), T-113 (routine proposals) are the real nightly
- * work and don't exist yet, so [doWork] currently has nothing to do beyond proving the guard stops
- * it on schedule — a real step loop slots in between `guard.start()` and the final `checkContinue`
- * once those tasks land.
+ * DOC-008 §5 — Dream Mode's WorkManager job. T-112 (scorecards)/T-113 (routine proposals) are real
+ * nightly steps that don't exist yet — this only runs T-111's memory consolidation so far; each
+ * future step slots in the same way, preceded by its own `checkContinue()` call.
  *
  * Uses WorkManager's default no-arg-plus-params reflective construction rather than Hilt's
- * `@HiltWorker` (a new Gradle dependency + KSP processor this project doesn't have yet) — nothing
- * here needs injected dependencies yet; add `hilt-work` when a real step needs one.
+ * `@HiltWorker` (a new Gradle dependency + KSP processor this project doesn't have yet) — pulls
+ * [MemoryStore] via a plain [EntryPoint] instead, the standard way to reach the Hilt graph from a
+ * class Hilt doesn't construct.
  */
 class DreamModeWorker(
     context: Context,
@@ -33,7 +38,9 @@ class DreamModeWorker(
         val guard = DreamModeGuard()
         guard.start(nowMs = System.currentTimeMillis(), batteryPct = batteryPct())
 
-        // Real Dream Mode steps (T-111/112/113) run here, each preceded by a checkContinue() call.
+        consolidateMemory()
+
+        // T-112/T-113's real steps run here, each preceded by their own checkContinue() call.
         val abort =
             guard.checkContinue(
                 nowMs = System.currentTimeMillis(),
@@ -46,6 +53,17 @@ class DreamModeWorker(
         }
         return Result.success() // aborting early isn't a job failure, just stopping the cycle
     }
+
+    private suspend fun consolidateMemory() {
+        val store = entryPoint().memoryStore()
+        val result = MemoryConsolidator.consolidate(store.getAllActive(), nowMs = System.currentTimeMillis())
+        result.updates.forEach { store.update(it) }
+        result.softDeletes.forEach { store.softDelete(it) }
+        Log.i(TAG, result.report.summary)
+    }
+
+    private fun entryPoint(): DreamModeWorkerEntryPoint =
+        EntryPointAccessors.fromApplication(applicationContext, DreamModeWorkerEntryPoint::class.java)
 
     private companion object {
         const val TAG = "DreamModeWorker"
@@ -66,6 +84,12 @@ class DreamModeWorker(
         val pm = applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
         return pm.currentThermalStatus >= PowerManager.THERMAL_STATUS_MODERATE
     }
+}
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface DreamModeWorkerEntryPoint {
+    fun memoryStore(): MemoryStore
 }
 
 /** The real WorkManager [Constraints] Dream Mode runs under — DOC-008 §5: charging + idle. */

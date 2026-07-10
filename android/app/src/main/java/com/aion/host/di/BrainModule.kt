@@ -1,8 +1,10 @@
 package com.aion.host.di
 
 import com.aion.brain.BudgetGuard
+import com.aion.brain.MemoryStore
 import com.aion.brain.ScoreStore
 import com.aion.host.brain.RoomBudgetGuard
+import com.aion.host.brain.RoomMemoryStore
 import com.aion.host.brain.RoomScoreStore
 import dagger.Binds
 import dagger.Module
@@ -18,4 +20,7 @@ abstract class BrainModule {
 
     @Binds
     abstract fun bindBudgetGuard(impl: RoomBudgetGuard): BudgetGuard
+
+    @Binds
+    abstract fun bindMemoryStore(impl: RoomMemoryStore): MemoryStore
 }
