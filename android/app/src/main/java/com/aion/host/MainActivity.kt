@@ -15,7 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +75,16 @@ private fun AionApp(
     var screen by remember { mutableStateOf(Screen.SETUP) }
     var overlayRunning by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // T-120 (DOC-017 T4) — block screenshots/screen-recording/recents-thumbnail capture while raw
+    // API key values are on screen; cleared again once the user navigates away.
+    DisposableEffect(screen) {
+        val window = (context as? Activity)?.window
+        if (screen == Screen.API_KEYS) {
+            window?.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {

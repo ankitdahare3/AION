@@ -35,19 +35,32 @@ class SecretVault
         @ApplicationContext context: Context,
     ) {
         private val prefs: SharedPreferences by lazy {
-            val masterKey =
-                MasterKey
-                    .Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build()
             EncryptedSharedPreferences.create(
                 context,
                 FILE_NAME,
-                masterKey,
+                buildMasterKey(context),
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
             )
         }
+
+        // T-120 (DOC-017 T4) — StrongBox where available: a real, physically separate secure
+        // element, a step up from the TEE-backed Keystore alone. Requesting it throws on hardware
+        // that doesn't have it (most budget/older devices), so this falls back to the plain
+        // TEE-backed key rather than crashing SecretVault construction on those devices.
+        private fun buildMasterKey(context: Context): MasterKey =
+            try {
+                MasterKey
+                    .Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .setRequestStrongBoxBacked(true)
+                    .build()
+            } catch (e: Exception) {
+                MasterKey
+                    .Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+            }
 
         fun put(
             key: ProviderKey,

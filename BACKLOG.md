@@ -33,3 +33,25 @@
   minimal, self-contained planning instructions. Wire it once the real AION persona/safety-rules
   text exists as an actual constant somewhere (currently only test-literal placeholders exist);
   likely lands alongside T-053's full graph wiring.
+
+- **T-062 (MemoryAgent write policy) must confidence-gate writes and tag screen/OCR-sourced facts
+  as `UNVERIFIED`, never auto-promoted** (DOC-017 T5, found in the T-120 security audit,
+  docs/SECURITY_AUDIT.md). `Memory.provenance` (T-111) is currently a free-form string with no
+  `UNVERIFIED` concept anywhere in code; `MemoryConsolidator`'s promote-on-merge logic boosts
+  confidence on any duplicate cluster with no source-awareness at all. Not fixed speculatively now
+  because nothing writes a real memory row in production yet (`MemoryWriterAgent` is still an
+  intentional no-op stub) — but T-062 must not ship without this gate, and `MemoryConsolidator`
+  needs a matching update the same day.
+
+- **A biometric app-lock for T6 (physical device access), DOC-017 §5's "AION app-lock (biometric)"**
+  — found genuinely absent in the T-120 security audit (zero `BiometricPrompt` usage anywhere).
+  Device Owner scaffolding + FBE already cover the encryption half; this is the missing
+  "lock the app itself" half. Sized like its own task (BiometricPrompt integration, a lock screen,
+  session-timeout logic), not a line-level audit fix — propose as a new task (suggested T-124)
+  rather than folding into T-120.
+
+- **PII redaction pre-egress (DOC-017 T7)** — no regex/NER redaction pass exists anywhere near a
+  network call. Not built speculatively in T-120 because no live code path currently sends
+  screen/vision content to any cloud endpoint (OCR is on-device-only, T-100; Gmail/Telegram, T-102,
+  only ever send what the user explicitly composes). Must land alongside whichever task first wires
+  a real cloud vision/multimodal path (DOC-012 §2), not after.
