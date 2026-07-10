@@ -16,6 +16,12 @@ import javax.inject.Singleton
  * swipe direction, so there's no honest way to execute them from a plan step alone. They return a
  * clear "not yet supported" failure rather than a wrong guess; tracked in BACKLOG.md pending either
  * a PlanStep ADR or a richer target-encoding convention.
+ *
+ * T-053: success is decided by [StepVerifier]'s before/after a11y diff, not by [ActionResult] alone
+ * — T-041's live verification found `dispatchGesture`'s completion callback unreliable (never fires
+ * within 5s on multiple real devices/emulators even when the tap visibly worked), so a `Failure`
+ * from the dispatcher is treated as inconclusive rather than a hard failure whenever the screen
+ * diff independently confirms the expected outcome happened anyway.
  */
 @Singleton
 class DispatcherActionExecutor
@@ -61,10 +67,12 @@ class DispatcherActionExecutor
 
             delay(DEBOUNCE_MS) // DOC-009 §4 — let the UI settle before capturing the post-action diff
             val after = service.currentScreenText().orEmpty()
+            val verification = StepVerifier.verify(step.expected, before, after)
+            val success = result is ActionResult.Success || verification.outcome == VerificationOutcome.PASS
             return ExecutionOutcome(
-                success = result is ActionResult.Success,
+                success = success,
                 observation = after,
-                error = (result as? ActionResult.Failure)?.reason,
+                error = if (success) null else (result as? ActionResult.Failure)?.reason ?: verification.reason,
             )
         }
 

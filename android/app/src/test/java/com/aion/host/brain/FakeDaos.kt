@@ -27,3 +27,13 @@ class FakeBudgetDao : BudgetDao {
 
     override suspend fun getForDay(dayEpoch: Long): BudgetDayEntity? = days[dayEpoch]
 }
+
+class FakeGraphCheckpointDao : GraphCheckpointDao {
+    val saved = mutableListOf<GraphCheckpointEntity>()
+
+    override suspend fun insert(checkpoint: GraphCheckpointEntity) {
+        saved += checkpoint
+    }
+
+    override suspend fun getForGoal(goal: String): List<GraphCheckpointEntity> = saved.filter { it.goal == goal }
+}

@@ -3,6 +3,7 @@ package com.aion.host.di
 import android.content.Context
 import androidx.room.Room
 import com.aion.host.brain.BudgetDao
+import com.aion.host.brain.GraphCheckpointDao
 import com.aion.host.brain.ProviderStatsDao
 import com.aion.host.security.AionDatabase
 import com.aion.host.security.AuditDao
@@ -23,7 +24,7 @@ object DatabaseModule {
     ): AionDatabase =
         Room
             .databaseBuilder(context, AionDatabase::class.java, "aion.db")
-            .addMigrations(AionDatabase.MIGRATION_1_2)
+            .addMigrations(AionDatabase.MIGRATION_1_2, AionDatabase.MIGRATION_2_3)
             .build()
 
     @Provides
@@ -34,4 +35,7 @@ object DatabaseModule {
 
     @Provides
     fun provideBudgetDao(db: AionDatabase): BudgetDao = db.budgetDao()
+
+    @Provides
+    fun provideGraphCheckpointDao(db: AionDatabase): GraphCheckpointDao = db.graphCheckpointDao()
 }
