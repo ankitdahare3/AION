@@ -92,6 +92,10 @@ class ReflectorAgentTest {
             assertTrue(result.plan.isEmpty())
             assertEquals(0, result.currentStep)
             assertFalse(result.done)
+            assertTrue(
+                "failures must be cleared too, or a later success gets misreported as still-failed",
+                result.failures.isEmpty(),
+            )
         }
 
     @Test

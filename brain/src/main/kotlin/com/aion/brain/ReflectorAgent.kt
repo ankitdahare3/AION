@@ -26,7 +26,10 @@ class ReflectorAgent : Agent {
             s.failures.lastOrNull() ?: return s.copy(done = true, response = s.response ?: "nothing to reflect on")
         val cause = classify(latest)
         return if (cause in RECOVERABLE) {
-            s.copy(plan = emptyList(), currentStep = 0, done = false)
+            // Clearing failures too, not just plan/currentStep: a fresh replan attempt should start
+            // clean, so a subsequent success isn't misreported by ResponderAgent as still-failed
+            // because of a stale failure message from the attempt being retried (T-082 recovery drill).
+            s.copy(plan = emptyList(), currentStep = 0, done = false, failures = emptyList())
         } else {
             s.copy(done = true, response = "AION couldn't complete \"${s.goal}\": $latest (${cause.name})")
         }
