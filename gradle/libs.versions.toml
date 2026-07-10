@@ -31,6 +31,9 @@ kaml = "0.104.0"
 # with our Kotlin 2.1.21 pin — "Module was compiled with an incompatible version of Kotlin").
 # 3.1.2 is the last release built against Kotlin 2.1.20, matching our project's Kotlin version.
 ktor = "3.1.2"
+# Shizuku-api: stable, rarely-updated shell-exec bridge (T-043). Pre-API28 ContentProvider
+# fallback deliberately not added — minSdk 31 doesn't need it.
+shizuku = "13.1.5"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -62,6 +65,7 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

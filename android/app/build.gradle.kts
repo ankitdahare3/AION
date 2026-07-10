@@ -19,7 +19,12 @@ android {
         // T-022: HiltTestRunner swaps in HiltTestApplication so @HiltAndroidTest works on-device.
         testInstrumentationRunner = "com.aion.host.HiltTestRunner"
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        // T-043: ShizukuBridge's shell-exec UserService is bound over an AIDL interface —
+        // Shizuku privatized the old direct newProcess() shell exec in recent api versions.
+        aidl = true
+    }
     kotlinOptions { jvmTarget = "17" }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -54,6 +59,7 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.shizuku.api)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
