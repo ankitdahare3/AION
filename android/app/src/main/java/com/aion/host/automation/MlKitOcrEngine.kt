@@ -16,7 +16,10 @@ import kotlin.coroutines.resumeWithException
 class MlKitOcrEngine
     @Inject
     constructor() : OcrEngine {
-        private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        // lazy — TextRecognition.getClient() touches Android framework internals eagerly, which
+        // would make this class uninstantiable in a plain JVM unit test (same fix as
+        // ActionDispatcher's mainHandler, T-077) even for tests that never call recognize().
+        private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
         override suspend fun recognize(bitmap: Bitmap): VisionObservation {
             val image = InputImage.fromBitmap(bitmap, 0)

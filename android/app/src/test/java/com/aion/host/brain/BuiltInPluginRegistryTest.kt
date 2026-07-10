@@ -5,6 +5,7 @@ import com.aion.brain.ToolCall
 import com.aion.brain.plugins.UIAutomationPlugin
 import com.aion.host.automation.ActionDispatcher
 import com.aion.host.automation.DispatcherActionExecutor
+import com.aion.host.automation.MlKitOcrEngine
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.AuditLogger
 import com.aion.host.security.FakeAuditDao
@@ -19,7 +20,7 @@ class BuiltInPluginRegistryTest {
     fun `the 6 named built-ins register successfully but none are enabled by default`() =
         runTest {
             val auditLogger = AuditLogger(FakeAuditDao())
-            val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger))
+            val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger), MlKitOcrEngine())
             val approvalGate = RealPluginApprovalGate(ApprovalGateService(auditLogger))
 
             val registry = BuiltInPluginRegistry(executor, approvalGate)
@@ -44,7 +45,7 @@ class BuiltInPluginRegistryTest {
     fun `UIAutomation is registered and auto-enabled, since it grants no new capability`() =
         runTest {
             val auditLogger = AuditLogger(FakeAuditDao())
-            val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger))
+            val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger), MlKitOcrEngine())
             val approvalGate = RealPluginApprovalGate(ApprovalGateService(auditLogger))
 
             val registry = BuiltInPluginRegistry(executor, approvalGate)

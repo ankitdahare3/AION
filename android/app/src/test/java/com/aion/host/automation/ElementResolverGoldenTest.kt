@@ -101,6 +101,57 @@ class ElementResolverGoldenTest {
         assertNull(resolved)
     }
 
+    // T-101 — DOC-012 §3's vision merge: a11y is tried first and wins on conflict; vision (OCR
+    // blocks) is only consulted when a11y found nothing, e.g. a canvas app with an empty a11y tree.
+
+    @Test
+    fun `canvas-app tap demo — empty a11y tree falls back to a vision OCR block and its bounds yield a tap point`() {
+        val vision =
+            VisionObservation(
+                ocrBlocks = listOf(OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f)),
+                screenSummary = "Start Game",
+            )
+
+        val resolved = ElementResolver.resolve(emptyList(), ResolveQuery.ByText("start game"), vision)
+
+        assertEquals(ResolveMethod.VISION_OCR, resolved?.method)
+        assertEquals("Start Game", resolved?.element?.text)
+        val bounds = checkNotNull(resolved?.element?.bounds)
+        val tapX = (bounds.left + bounds.right) / 2
+        val tapY = (bounds.top + bounds.bottom) / 2
+        assertEquals(200, tapX)
+        assertEquals(230, tapY)
+    }
+
+    @Test
+    fun `a11y wins on conflict — a real a11y match is preferred over a same-text vision block`() {
+        val elements = elementsFor("tree4_aion")
+        val a11yTarget = elements.first { it.text == "API Keys" }
+        val vision =
+            VisionObservation(
+                ocrBlocks = listOf(OcrBlock(text = "API Keys", bounds = Bounds(0, 0, 999, 999), confidence = 0.99f)),
+                screenSummary = "API Keys",
+            )
+
+        val resolved = ElementResolver.resolve(elements, ResolveQuery.ByText("api keys"), vision)
+
+        assertEquals(ResolveMethod.FUZZY_TEXT, resolved?.method)
+        assertEquals(a11yTarget.bounds, resolved?.element?.bounds)
+    }
+
+    @Test
+    fun `ById never falls through to vision since OCR blocks have no stable id`() {
+        val vision =
+            VisionObservation(
+                ocrBlocks = listOf(OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f)),
+                screenSummary = "Start Game",
+            )
+
+        val resolved = ElementResolver.resolve(emptyList(), ResolveQuery.ById("ocr:0"), vision)
+
+        assertNull(resolved)
+    }
+
     private fun elementsFor(fixture: String): List<ElementRef> {
         val xml = readResource("/a11y-trees/$fixture.xml")
         return A11yTreeReader.read(UiAutomatorXmlParser.parse(xml))

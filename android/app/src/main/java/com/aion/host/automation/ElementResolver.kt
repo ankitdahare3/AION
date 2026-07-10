@@ -13,7 +13,7 @@ sealed class ResolveQuery {
     ) : ResolveQuery()
 }
 
-enum class ResolveMethod { EXACT_ID, FUZZY_TEXT }
+enum class ResolveMethod { EXACT_ID, FUZZY_TEXT, VISION_OCR }
 
 data class ResolvedElement(
     val element: ElementRef,
@@ -22,9 +22,11 @@ data class ResolvedElement(
 )
 
 /**
- * DOC-009 §2 — exact-id → fuzzy-text chain. Vision fallback (DOC-012) isn't built yet; a caller
- * that gets `null` back (nothing resolved with sufficient confidence) is exactly the "hand off to
- * vision" signal once that system exists — tracked in BACKLOG.md, not stubbed here.
+ * DOC-009 §2 — exact-id → fuzzy-text chain, with DOC-012 §3's vision merge as the last resort:
+ * a11y always wins on conflict (tried first; vision is only consulted when a11y found nothing),
+ * matching DOC-012 §1's "vision is the fallback" role for cases like canvas apps/games where the
+ * a11y tree is empty or partial. OCR blocks have no stable id, so [ResolveQuery.ById] never falls
+ * through to vision — only [ResolveQuery.ByText] can.
  */
 object ElementResolver {
     private const val FUZZY_THRESHOLD = 0.5
@@ -32,11 +34,29 @@ object ElementResolver {
     fun resolve(
         elements: List<ElementRef>,
         query: ResolveQuery,
-    ): ResolvedElement? =
-        when (query) {
-            is ResolveQuery.ById -> resolveById(elements, query.id)
-            is ResolveQuery.ByText -> resolveByText(elements, query.text)
-        }
+        vision: VisionObservation? = null,
+    ): ResolvedElement? {
+        val fromA11y =
+            when (query) {
+                is ResolveQuery.ById -> resolveById(elements, query.id)
+                is ResolveQuery.ByText -> resolveByText(elements, query.text)
+            }
+        if (fromA11y != null || vision == null || query !is ResolveQuery.ByText) return fromA11y
+        val ocrElements = vision.ocrBlocks.mapIndexed { i, block -> ocrToElement(block, i) }
+        return resolveByText(ocrElements, query.text)?.copy(method = ResolveMethod.VISION_OCR)
+    }
+
+    private fun ocrToElement(
+        block: OcrBlock,
+        index: Int,
+    ): ElementRef =
+        ElementRef(
+            id = "ocr:$index",
+            role = "text",
+            text = block.text,
+            bounds = block.bounds,
+            states = emptyList(),
+        )
 
     private fun resolveById(
         elements: List<ElementRef>,

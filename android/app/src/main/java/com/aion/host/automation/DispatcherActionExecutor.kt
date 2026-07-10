@@ -28,6 +28,9 @@ class DispatcherActionExecutor
     @Inject
     constructor(
         private val dispatcher: ActionDispatcher,
+        // Concrete type, not the OcrEngine interface — no second implementation exists yet to
+        // justify a Hilt @Binds module for it (YAGNI); swap this if/when one does (see OcrEngine).
+        private val ocrEngine: MlKitOcrEngine,
     ) : ActionExecutor {
         override suspend fun execute(step: PlanStep): ExecutionOutcome {
             val service =
@@ -49,8 +52,13 @@ class DispatcherActionExecutor
                         dispatcher.globalAction(action)
                     }
                     "tap", "longpress" -> {
+                        val a11yElements = service.currentElements()
+                        // DOC-012 §1 — vision is the fallback, only when a11y has nothing (canvas
+                        // apps/games); paying the screenshot+OCR cost on every step would blow the
+                        // ≤2.5s/step budget (DOC-012 §5) for no benefit when a11y already works.
+                        val vision = if (a11yElements.isEmpty()) captureVision(service) else null
                         val resolved =
-                            ElementResolver.resolve(service.currentElements(), ResolveQuery.ByText(step.target))
+                            ElementResolver.resolve(a11yElements, ResolveQuery.ByText(step.target), vision)
                                 ?: return ExecutionOutcome(false, before, "could not resolve element: ${step.target}")
                         if (step.action.equals("longpress", ignoreCase = true)) {
                             dispatcher.longPress(TapTarget.Element(resolved.element))
@@ -74,6 +82,11 @@ class DispatcherActionExecutor
                 observation = after,
                 error = if (success) null else (result as? ActionResult.Failure)?.reason ?: verification.reason,
             )
+        }
+
+        private suspend fun captureVision(service: AionAccessibilityService): VisionObservation? {
+            val bitmap = service.captureScreenshot() ?: return null
+            return ocrEngine.recognize(bitmap)
         }
 
         private companion object {
