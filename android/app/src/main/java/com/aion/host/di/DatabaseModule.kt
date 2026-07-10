@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.aion.host.brain.BudgetDao
 import com.aion.host.brain.GraphCheckpointDao
 import com.aion.host.brain.ProviderStatsDao
+import com.aion.host.memory.ElementMapDao
+import com.aion.host.memory.EpisodeDao
 import com.aion.host.security.AionDatabase
 import com.aion.host.security.AuditDao
 import com.aion.host.security.DbPassphraseStore
@@ -46,4 +48,10 @@ object DatabaseModule {
 
     @Provides
     fun provideGraphCheckpointDao(db: AionDatabase): GraphCheckpointDao = db.graphCheckpointDao()
+
+    @Provides
+    fun provideEpisodeDao(db: AionDatabase): EpisodeDao = db.episodeDao()
+
+    @Provides
+    fun provideElementMapDao(db: AionDatabase): ElementMapDao = db.elementMapDao()
 }

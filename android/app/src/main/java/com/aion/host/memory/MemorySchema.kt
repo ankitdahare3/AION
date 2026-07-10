@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 
@@ -143,14 +144,23 @@ interface SkillDao {
 
 @Dao
 interface ElementMapDao {
-    @Insert
-    suspend fun insert(elementMap: ElementMapEntity)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(elementMap: ElementMapEntity)
 
     @Query("SELECT * FROM element_maps WHERE appPkg = :appPkg AND appVersion = :appVersion")
     suspend fun getForAppVersion(
         appPkg: String,
         appVersion: String,
     ): List<ElementMapEntity>
+
+    @Query(
+        "SELECT * FROM element_maps WHERE appPkg = :appPkg AND appVersion = :appVersion AND screenHash = :screenHash",
+    )
+    suspend fun getOne(
+        appPkg: String,
+        appVersion: String,
+        screenHash: String,
+    ): ElementMapEntity?
 }
 
 @Dao
