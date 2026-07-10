@@ -37,6 +37,10 @@ shizuku = "13.1.5"
 # SQLCipher for Room (ADR-019, T-060): at-rest DB encryption, defense in depth over OS FBE.
 sqlcipher = "4.5.4"
 androidxSqlite = "2.4.0"
+# ML Kit Text Recognition v2 (DOC-012 §2), on-device, no network. Latin-script model only for now —
+# the Devanagari model (com.google.mlkit:text-recognition-devanagari) is a separate dependency,
+# deferred until there's a real Hindi-text golden fixture to test it against (BACKLOG.md).
+mlkitTextRecognition = "16.0.1"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -72,6 +76,7 @@ ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref =
 shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
 sqlcipher-android = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
 androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "androidxSqlite" }
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

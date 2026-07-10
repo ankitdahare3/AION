@@ -1,9 +1,13 @@
 package com.aion.host.automation
 
 import android.accessibilityservice.AccessibilityService
+import android.graphics.Bitmap
 import android.graphics.Rect
+import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * DOC-009 §2 — reads the active window's accessibility tree, maps it to the Android-independent
@@ -55,6 +59,31 @@ class AionAccessibilityService : AccessibilityService() {
             root.recycle()
         }
     }
+
+    /**
+     * DOC-012 §2 — real screenshot capture via the AccessibilityService API (available since API
+     * 30, always present given this project's minSdk 31). DOC-012 also names a MediaProjection
+     * fallback for pre-30 devices, which this project's own minSdk makes unreachable — not built,
+     * see BACKLOG.md rather than adding genuinely dead code for a device this app can't run on.
+     */
+    suspend fun captureScreenshot(): Bitmap? =
+        suspendCancellableCoroutine { cont ->
+            takeScreenshot(
+                Display.DEFAULT_DISPLAY,
+                mainExecutor,
+                object : TakeScreenshotCallback {
+                    override fun onSuccess(result: ScreenshotResult) {
+                        val bitmap = Bitmap.wrapHardwareBuffer(result.hardwareBuffer, result.colorSpace)
+                        result.hardwareBuffer.close()
+                        if (cont.isActive) cont.resume(bitmap)
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        if (cont.isActive) cont.resume(null)
+                    }
+                },
+            )
+        }
 
     /**
      * Re-walks the live tree looking for the node whose stable id (DOC-009 §2 rule, via
