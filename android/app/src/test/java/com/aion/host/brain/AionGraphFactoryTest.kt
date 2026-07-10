@@ -6,6 +6,8 @@ import com.aion.brain.BrainResult
 import com.aion.brain.BudgetGuard
 import com.aion.brain.ExecutionOutcome
 import com.aion.brain.PlanStep
+import com.aion.brain.PluginApprovalGate
+import com.aion.brain.PluginManager
 import com.aion.brain.Provider
 import com.aion.brain.ProviderCaps
 import com.aion.brain.ProviderFailure
@@ -13,6 +15,7 @@ import com.aion.brain.ProviderRouter
 import com.aion.brain.ScoreStore
 import com.aion.brain.TaskType
 import com.aion.brain.Tier
+import com.aion.brain.plugins.UIAutomationPlugin
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.AuditLogger
 import com.aion.host.security.FakeAuditDao
@@ -66,6 +69,14 @@ private fun scriptedProvider(text: String) =
             BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
     }
 
+/** T-077: ExecutorAgent routes through PluginManager exclusively now — wrap the fake ActionExecutor in the real UIAutomationPlugin. */
+private fun pluginManagerWith(executor: ActionExecutor): PluginManager {
+    val manager = PluginManager(PluginApprovalGate { _, _ -> true })
+    manager.register(UIAutomationPlugin(executor))
+    manager.enable(UIAutomationPlugin.ID)
+    return manager
+}
+
 /** T-053 AC — a real, fully-assembled AionGraph run with checkpoints persisted. */
 class AionGraphFactoryTest {
     @Test
@@ -95,7 +106,7 @@ class AionGraphFactoryTest {
                 }
 
             val factory = AionGraphFactory(approvalGate, checkpointer)
-            val graph = factory.create(router, executor)
+            val graph = factory.create(router, pluginManagerWith(executor))
 
             val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
             testScheduler.advanceUntilIdle()
@@ -135,7 +146,7 @@ class AionGraphFactoryTest {
                 }
 
             val factory = AionGraphFactory(approvalGate, checkpointer)
-            val graph = factory.create(router, executor)
+            val graph = factory.create(router, pluginManagerWith(executor))
 
             val result = graph.run(com.aion.brain.AgentState(goal = "open settings"))
             testScheduler.advanceUntilIdle()

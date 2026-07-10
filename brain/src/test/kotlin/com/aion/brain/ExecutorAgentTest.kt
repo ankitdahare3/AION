@@ -1,5 +1,6 @@
 package com.aion.brain
 
+import com.aion.brain.plugins.UIAutomationPlugin
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,6 +12,14 @@ private fun step(
     sideEffect: Boolean,
 ) = PlanStep(action = action, target = "t-$action", expected = "e-$action", sideEffect = sideEffect)
 
+/** T-077: ExecutorAgent routes through PluginManager exclusively — build a manager with the real UIAutomationPlugin registered+enabled over a fake ActionExecutor. */
+private fun managerWith(executor: ActionExecutor): PluginManager {
+    val manager = PluginManager(PluginApprovalGate { _, _ -> true })
+    manager.register(UIAutomationPlugin(executor))
+    manager.enable(UIAutomationPlugin.ID)
+    return manager
+}
+
 class ExecutorAgentTest {
     @Test
     fun `non-side-effect step executes immediately without requesting approval`() =
@@ -18,10 +27,12 @@ class ExecutorAgentTest {
             val calls = mutableListOf<PlanStep>()
             val agent =
                 ExecutorAgent(
-                    ActionExecutor { s ->
-                        calls.add(s)
-                        ExecutionOutcome(success = true, observation = "ok")
-                    },
+                    managerWith(
+                        ActionExecutor { s ->
+                            calls.add(s)
+                            ExecutionOutcome(success = true, observation = "ok")
+                        },
+                    ),
                 )
 
             val result = agent.step(AgentState(goal = "g", plan = listOf(step("tap", sideEffect = false))))
@@ -37,13 +48,15 @@ class ExecutorAgentTest {
             val calls = mutableListOf<PlanStep>()
             val agent =
                 ExecutorAgent(
-                    ActionExecutor { s ->
-                        calls.add(s)
-                        ExecutionOutcome(success = true, observation = "ok")
-                    },
+                    managerWith(
+                        ActionExecutor { s ->
+                            calls.add(s)
+                            ExecutionOutcome(success = true, observation = "ok")
+                        },
+                    ),
                 )
 
-            val result = agent.step(AgentState(goal = "g", plan = listOf(step("send", sideEffect = true))))
+            val result = agent.step(AgentState(goal = "g", plan = listOf(step("tap", sideEffect = true))))
 
             assertTrue(result.needsApproval)
             assertEquals(0, calls.size)
@@ -56,12 +69,14 @@ class ExecutorAgentTest {
             val calls = mutableListOf<PlanStep>()
             val agent =
                 ExecutorAgent(
-                    ActionExecutor { s ->
-                        calls.add(s)
-                        ExecutionOutcome(success = true, observation = "sent")
-                    },
+                    managerWith(
+                        ActionExecutor { s ->
+                            calls.add(s)
+                            ExecutionOutcome(success = true, observation = "sent")
+                        },
+                    ),
                 )
-            val plan = listOf(step("send", sideEffect = true))
+            val plan = listOf(step("tap", sideEffect = true))
 
             val afterRequest = agent.step(AgentState(goal = "g", plan = plan))
             // AionGraph.run() clears needsApproval unconditionally right after ApprovalGate.await().
@@ -69,7 +84,7 @@ class ExecutorAgentTest {
 
             assertEquals(1, calls.size)
             assertEquals(1, afterApproval.currentStep)
-            assertTrue(afterApproval.toolResults.contains("sent"))
+            assertTrue(afterApproval.toolResults.any { it.contains("sent") })
         }
 
     @Test
@@ -78,12 +93,14 @@ class ExecutorAgentTest {
             val calls = mutableListOf<PlanStep>()
             val agent =
                 ExecutorAgent(
-                    ActionExecutor { s ->
-                        calls.add(s)
-                        ExecutionOutcome(success = true, observation = "ok")
-                    },
+                    managerWith(
+                        ActionExecutor { s ->
+                            calls.add(s)
+                            ExecutionOutcome(success = true, observation = "ok")
+                        },
+                    ),
                 )
-            val plan = listOf(step("send1", sideEffect = true), step("send2", sideEffect = true))
+            val plan = listOf(step("tap", sideEffect = true), step("launchApp", sideEffect = true))
 
             var s = agent.step(AgentState(goal = "g", plan = plan))
             assertTrue(s.needsApproval) // step 0 asks
@@ -103,7 +120,9 @@ class ExecutorAgentTest {
     fun `failed execution is recorded without crashing the step`() =
         runTest {
             val agent =
-                ExecutorAgent(ActionExecutor { ExecutionOutcome(success = false, observation = "", error = "boom") })
+                ExecutorAgent(
+                    managerWith(ActionExecutor { ExecutionOutcome(success = false, observation = "", error = "boom") }),
+                )
 
             val result = agent.step(AgentState(goal = "g", plan = listOf(step("tap", sideEffect = false))))
 
@@ -112,9 +131,31 @@ class ExecutorAgentTest {
         }
 
     @Test
+    fun `an unrouteable plugin id fails the step with a diagnosable reason`() =
+        runTest {
+            val agent =
+                ExecutorAgent(
+                    PluginManager(
+                        PluginApprovalGate {
+                            _,
+                            _,
+                            ->
+                            true
+                        },
+                    ),
+                    uiAutomationPluginId = "not.registered",
+                )
+
+            val result = agent.step(AgentState(goal = "g", plan = listOf(step("tap", sideEffect = false))))
+
+            assertTrue(result.failures.any { it.contains("not.registered") })
+        }
+
+    @Test
     fun `plan exhaustion marks the run done`() =
         runTest {
-            val agent = ExecutorAgent(ActionExecutor { ExecutionOutcome(success = true, observation = "ok") })
+            val agent =
+                ExecutorAgent(managerWith(ActionExecutor { ExecutionOutcome(success = true, observation = "ok") }))
 
             val result = agent.step(AgentState(goal = "g", plan = emptyList(), currentStep = 0))
 
@@ -122,7 +163,8 @@ class ExecutorAgentTest {
         }
 
     // Strongest proof of the AC: a real AionGraph run, mixed side-effect/non-side-effect steps,
-    // asserting the fake ApprovalGate fires exactly once per side-effect step, never for the others.
+    // asserting the fake ApprovalGate fires exactly once per side-effect step, never for the others,
+    // and that ExecutorAgent never touches ActionExecutor directly — only through PluginManager.
     @Test
     fun `a real AionGraph run requests approval exactly once per side-effect step, in order`() =
         runTest {
@@ -134,14 +176,14 @@ class ExecutorAgentTest {
                     executed.add(s.action)
                     ExecutionOutcome(success = true, observation = s.action)
                 }
-            val executorAgent = ExecutorAgent(executor)
+            val executorAgent = ExecutorAgent(managerWith(executor))
 
             val plan =
                 listOf(
-                    step("readScreen", sideEffect = false),
-                    step("sendMessage", sideEffect = true),
-                    step("checkResult", sideEffect = false),
-                    step("deleteFile", sideEffect = true),
+                    step("scrollTo", sideEffect = false),
+                    step("tap", sideEffect = true),
+                    step("longPress", sideEffect = false),
+                    step("launchApp", sideEffect = true),
                 )
 
             val graph =
@@ -169,7 +211,7 @@ class ExecutorAgentTest {
 
             val result = graph.run(AgentState(goal = "do stuff", plan = plan))
 
-            assertEquals(listOf("readScreen", "sendMessage", "checkResult", "deleteFile"), executed)
+            assertEquals(listOf("scrollTo", "tap", "longPress", "launchApp"), executed)
             assertEquals(listOf(1, 3), approvalRequestsFor) // only the two sideEffect=true step indices
             assertTrue(result.failures.isEmpty())
         }

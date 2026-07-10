@@ -1,0 +1,27 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.uiautomation. See bench/system.yaml for format notes.
+# This is the generic fallback plugin (DOC-005 §5, DOC-009 §1's last-resort tier) — ExecutorAgent
+# routes every PlanStep through it exclusively (T-077), so its "scenarios" are really just its
+# primitive vocabulary rather than named user goals like the other built-ins.
+plugin: com.aion.plugin.uiautomation
+scenarios:
+  - name: tap a resolved element
+    expectedTools: [tap]
+    requiresApproval: false
+  - name: long-press a resolved element
+    expectedTools: [longPress]
+    requiresApproval: false
+  - name: swipe within a region
+    expectedTools: [swipe]
+    requiresApproval: false
+  - name: scroll a container
+    expectedTools: [scrollTo]
+    requiresApproval: false
+  - name: type into a resolved field
+    expectedTools: [type]
+    requiresApproval: false
+  - name: launch an app by package name
+    expectedTools: [launchApp]
+    requiresApproval: false
+  - name: perform a system navigation action
+    expectedTools: [globalAction]
+    requiresApproval: false

@@ -1,10 +1,10 @@
 package com.aion.host.brain
 
-import com.aion.brain.ActionExecutor
 import com.aion.brain.AionGraph
 import com.aion.brain.ExecutorAgent
 import com.aion.brain.MemoryWriterAgent
 import com.aion.brain.PlannerAgent
+import com.aion.brain.PluginManager
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ReflectorAgent
 import com.aion.brain.ResponderAgent
@@ -12,17 +12,21 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * T-053 — assembles a real [AionGraph] per DOC-004 §2's standard flow: planner → executor →
- * (fail → reflector → planner) → responder → memory_writer → END. `router`/`executor` are passed
- * in per-call rather than Hilt-injected: a real [ProviderRouter] needs live provider API keys
- * (T-031 🧍HC-3, not entered yet) and a real [ActionExecutor] (`DispatcherActionExecutor`) needs a
- * live `AionAccessibilityService`. Everything else here — approval, checkpointing — is real today.
- * Voice input (EPIC 2, not built) is out of scope: a goal from `VoiceSessionManager` would just be
- * another `String` passed to [create]'s resulting graph, nothing here needs to change for that.
+ * T-053/T-077 — assembles a real [AionGraph] per DOC-004 §2's standard flow: planner → executor →
+ * (fail → reflector → planner) → responder → memory_writer → END. `router`/`pluginManager` are
+ * passed in per-call rather than Hilt-injected: a real [ProviderRouter] needs live provider API
+ * keys (T-031 🧍HC-3, not entered yet), and `pluginManager` must already have
+ * `com.aion.plugin.uiautomation` registered+enabled (see [BuiltInPluginRegistry]) — a real
+ * `DispatcherActionExecutor` needs a live `AionAccessibilityService`. Everything else here —
+ * approval, checkpointing — is real today. Voice input (EPIC 2, not built) is out of scope: a goal
+ * from `VoiceSessionManager` would just be another `String` passed to [create]'s resulting graph,
+ * nothing here needs to change for that.
  *
- * DOC-004's diagram also names a separate "verifier" node; that's folded into `executor` instead —
- * verification needs the exact before/after screen text the executor already captures, so bouncing
- * through an extra graph hop just to re-run a comparison on the same two strings has no benefit.
+ * DOC-004's diagram also names a separate "verifier" node; that's folded into the executor path
+ * instead — verification needs the exact before/after screen text `DispatcherActionExecutor`
+ * already captures, so bouncing through an extra graph hop just to re-run a comparison on the same
+ * two strings has no benefit. `ExecutorAgent` itself (T-077) no longer calls any dispatcher
+ * directly — it routes exclusively through [PluginManager].
  */
 @Singleton
 class AionGraphFactory
@@ -33,14 +37,14 @@ class AionGraphFactory
     ) {
         fun create(
             router: ProviderRouter,
-            executor: ActionExecutor,
+            pluginManager: PluginManager,
         ): AionGraph {
             var lastFailureCount = 0
             return AionGraph(
                 nodes =
                     mapOf(
                         "planner" to PlannerAgent(router),
-                        "executor" to ExecutorAgent(executor),
+                        "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(),
                         "responder" to ResponderAgent(),
                         "memory_writer" to MemoryWriterAgent(),

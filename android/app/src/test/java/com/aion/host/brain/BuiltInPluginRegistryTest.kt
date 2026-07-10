@@ -2,6 +2,7 @@ package com.aion.host.brain
 
 import com.aion.brain.PluginRouteResult
 import com.aion.brain.ToolCall
+import com.aion.brain.plugins.UIAutomationPlugin
 import com.aion.host.automation.ActionDispatcher
 import com.aion.host.automation.DispatcherActionExecutor
 import com.aion.host.security.ApprovalGateService
@@ -12,10 +13,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** T-071..076 AC — all 6 built-ins register (validated) but stay disabled until the owner's explicit 🧍HC-5 enable. */
+/** T-071..076/T-077 AC — the 6 named built-ins register (validated) but stay disabled until the owner's explicit 🧍HC-5 enable; UIAutomation (the pre-existing baseline) is auto-enabled. */
 class BuiltInPluginRegistryTest {
     @Test
-    fun `all 6 built-ins register successfully but none are enabled by default`() =
+    fun `the 6 named built-ins register successfully but none are enabled by default`() =
         runTest {
             val auditLogger = AuditLogger(FakeAuditDao())
             val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger))
@@ -37,5 +38,17 @@ class BuiltInPluginRegistryTest {
                 val routed = registry.manager.route(id, ToolCall("anything", "{}", false))
                 assertTrue("$id routed while disabled: $routed", routed is PluginRouteResult.Rejected)
             }
+        }
+
+    @Test
+    fun `UIAutomation is registered and auto-enabled, since it grants no new capability`() =
+        runTest {
+            val auditLogger = AuditLogger(FakeAuditDao())
+            val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger))
+            val approvalGate = RealPluginApprovalGate(ApprovalGateService(auditLogger))
+
+            val registry = BuiltInPluginRegistry(executor, approvalGate)
+
+            assertTrue(registry.manager.isEnabled(UIAutomationPlugin.ID))
         }
 }
