@@ -1,0 +1,8 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.files. See bench/system.yaml for format notes.
+# search_file isn't a tool yet (needs typed query text — BACKLOG.md).
+plugin: com.aion.plugin.files
+scenarios:
+  - name: open files
+    goal: "files kholo"
+    expectedTools: [open_files]
+    requiresApproval: false

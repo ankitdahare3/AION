@@ -1,0 +1,8 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.browser. See bench/system.yaml for format notes.
+# search_web/open_url aren't tools yet (need typed query/URL text — BACKLOG.md).
+plugin: com.aion.plugin.browser
+scenarios:
+  - name: open browser
+    goal: "browser kholo"
+    expectedTools: [open_browser]
+    requiresApproval: false

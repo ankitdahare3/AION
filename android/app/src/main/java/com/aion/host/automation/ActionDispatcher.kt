@@ -271,5 +271,9 @@ class ActionDispatcher
             const val GESTURE_TIMEOUT_MS = 5_000L
         }
 
-        private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        // Lazy, not a constructor-time val: touching Looper.getMainLooper() eagerly makes this class
+        // uninstantiable in a plain JVM unit test (no real Android runtime) even when nothing calls
+        // dispatchGesture — found via BuiltInPluginRegistryTest, which only needed to construct an
+        // ActionDispatcher, never call it.
+        private val mainHandler by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
     }

@@ -1,0 +1,25 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.system.
+# Format: informal for now (no BenchRunner exists yet, see BACKLOG.md) — each scenario is a
+# QA case a real ExecutorAgent run should satisfy once wired to voice/text goals.
+plugin: com.aion.plugin.system
+scenarios:
+  - name: open settings
+    goal: "settings kholo"
+    expectedTools: [open_settings]
+    requiresApproval: false
+  - name: toggle wifi
+    goal: "wifi on karo"
+    expectedTools: [toggle_wifi]
+    requiresApproval: true
+  - name: toggle bluetooth
+    goal: "bluetooth band karo"
+    expectedTools: [toggle_bluetooth]
+    requiresApproval: true
+  - name: toggle dark mode
+    goal: "dark mode on karo"
+    expectedTools: [toggle_dark_mode]
+    requiresApproval: true
+  - name: go home
+    goal: "home screen pe jao"
+    expectedTools: [go_home]
+    requiresApproval: false

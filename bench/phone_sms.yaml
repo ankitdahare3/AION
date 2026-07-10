@@ -1,0 +1,13 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.phone_sms. See bench/system.yaml for format notes.
+# call_contact/send_sms aren't tools yet (need typed input, PlanStep can't carry it — BACKLOG.md),
+# so this bench only covers what's actually wired.
+plugin: com.aion.plugin.phone_sms
+scenarios:
+  - name: open dialer
+    goal: "phone kholo"
+    expectedTools: [open_dialer]
+    requiresApproval: false
+  - name: open messages
+    goal: "messages kholo"
+    expectedTools: [open_messages]
+    requiresApproval: false

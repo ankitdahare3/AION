@@ -1,0 +1,11 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.contacts. See bench/system.yaml for format notes.
+plugin: com.aion.plugin.contacts
+scenarios:
+  - name: open contacts
+    goal: "contacts kholo"
+    expectedTools: [open_contacts]
+    requiresApproval: false
+  - name: start a new contact
+    goal: "naya contact banao"
+    expectedTools: [open_contacts, start_new_contact]
+    requiresApproval: false

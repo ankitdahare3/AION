@@ -1,0 +1,8 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.calendar. See bench/system.yaml for format notes.
+# create_event isn't a tool yet (needs typed event details — BACKLOG.md).
+plugin: com.aion.plugin.calendar
+scenarios:
+  - name: open calendar
+    goal: "calendar kholo"
+    expectedTools: [open_calendar]
+    requiresApproval: false
