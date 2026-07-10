@@ -30,6 +30,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    sourceSets {
+        // T-060: MigrationTestHelper reads exported schema JSONs as test assets.
+        getByName("androidTest") { assets.srcDirs("$projectDir/schemas") }
+    }
 }
 
 ksp {
@@ -60,6 +64,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.security.crypto)
     implementation(libs.shizuku.api)
+    implementation(libs.sqlcipher.android)
+    implementation(libs.androidx.sqlite)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -71,4 +77,5 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
+    androidTestImplementation(libs.androidx.room.testing)
 }
