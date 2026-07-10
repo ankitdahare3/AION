@@ -17,9 +17,13 @@ private data class PlanStepDto(
  * model's output doesn't parse, we ask once more with an explicit "invalid JSON" hint before
  * giving up. Full persona/safety-prefix wiring (ContextBuilder) is deferred to whichever task
  * finalizes the real AION persona text — out of scope for T-050's own AC.
+ *
+ * [fewShotBank] (T-081, DOC-007 §3) is optional: when present, any counter-examples recorded for
+ * this exact goal are folded into the system prompt as an explicit "don't repeat this" warning.
  */
 class PlannerAgent(
     private val router: ProviderRouter,
+    private val fewShotBank: FewShotBank? = null,
 ) : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val steps = callAndParse(s.goal, repairHint = false) ?: callAndParse(s.goal, repairHint = true)
@@ -37,7 +41,7 @@ class PlannerAgent(
         val req =
             BrainRequest(
                 taskType = TaskType.PLAN,
-                system = if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA,
+                system = buildSystem(goal, repairHint),
                 messages = listOf(Msg("user", goal)),
                 jsonSchema = PLAN_SCHEMA,
             )
@@ -48,6 +52,18 @@ class PlannerAgent(
                 return null
             }
         return parsePlan(result.text)
+    }
+
+    private fun buildSystem(
+        goal: String,
+        repairHint: Boolean,
+    ): String {
+        val base = if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA
+        val counterExamples = fewShotBank?.examplesFor(goal).orEmpty()
+        if (counterExamples.isEmpty()) return base
+        val warnings =
+            counterExamples.joinToString("\n") { "- Plan ${it.badPlanJson} was WRONG for this goal: ${it.reason}" }
+        return "$base\n\nPrevious mistakes for this exact goal — do NOT repeat them:\n$warnings"
     }
 
     private fun parsePlan(text: String): List<PlanStep>? =
