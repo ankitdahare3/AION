@@ -11,6 +11,10 @@ data class ReflectionRecord(
     val latencyMs: Long,
     val costUsd: Double,
     val appPkg: String?,
+    // T-113 — when this episode was recorded (epoch ms); PatternLearner's time-based routine
+    // detection needs it. Defaults to 0 since record() always stamps the real time on write —
+    // callers building a ReflectionRecord to hand to record() never need to set this themselves.
+    val ts: Long = 0,
 )
 
 /** DOC-019 §1 `episodes` table. Room-backed impl lives in `:android:app` (T-080). */

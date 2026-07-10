@@ -41,6 +41,7 @@ class RoomReflectionRecordStore
                     latencyMs = e.latencyMs,
                     costUsd = e.costUsd,
                     appPkg = e.appPkg,
+                    ts = e.ts,
                 )
             }
     }
