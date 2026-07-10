@@ -14,16 +14,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** T-071..076/T-077 AC — the 6 named built-ins register (validated) but stay disabled until the owner's explicit 🧍HC-5 enable; UIAutomation (the pre-existing baseline) is auto-enabled. */
+/** T-071..076/T-077/T-102 AC — the 8 named built-ins register (validated) but stay disabled until the owner's explicit 🧍HC-5 enable; UIAutomation (the pre-existing baseline) is auto-enabled. */
 class BuiltInPluginRegistryTest {
     @Test
-    fun `the 6 named built-ins register successfully but none are enabled by default`() =
+    fun `the 8 named built-ins register successfully but none are enabled by default`() =
         runTest {
             val auditLogger = AuditLogger(FakeAuditDao())
             val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger), MlKitOcrEngine())
             val approvalGate = RealPluginApprovalGate(ApprovalGateService(auditLogger))
 
-            val registry = BuiltInPluginRegistry(executor, approvalGate)
+            val registry = BuiltInPluginRegistry(executor, approvalGate, "", "")
 
             val ids =
                 listOf(
@@ -33,6 +33,8 @@ class BuiltInPluginRegistryTest {
                     "com.aion.plugin.calendar",
                     "com.aion.plugin.files",
                     "com.aion.plugin.browser",
+                    "com.aion.plugin.gmail",
+                    "com.aion.plugin.telegram",
                 )
             for (id in ids) {
                 assertFalse("$id should not be enabled without owner approval (HC-5)", registry.manager.isEnabled(id))
@@ -48,7 +50,7 @@ class BuiltInPluginRegistryTest {
             val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger), MlKitOcrEngine())
             val approvalGate = RealPluginApprovalGate(ApprovalGateService(auditLogger))
 
-            val registry = BuiltInPluginRegistry(executor, approvalGate)
+            val registry = BuiltInPluginRegistry(executor, approvalGate, "", "")
 
             assertTrue(registry.manager.isEnabled(UIAutomationPlugin.ID))
         }

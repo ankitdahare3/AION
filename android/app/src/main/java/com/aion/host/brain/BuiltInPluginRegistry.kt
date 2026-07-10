@@ -5,10 +5,14 @@ import com.aion.brain.plugins.BrowserPlugin
 import com.aion.brain.plugins.CalendarPlugin
 import com.aion.brain.plugins.ContactsPlugin
 import com.aion.brain.plugins.FilesPlugin
+import com.aion.brain.plugins.GmailPlugin
 import com.aion.brain.plugins.PhoneSmsPlugin
 import com.aion.brain.plugins.SystemPlugin
+import com.aion.brain.plugins.TelegramPlugin
 import com.aion.brain.plugins.UIAutomationPlugin
 import com.aion.host.automation.DispatcherActionExecutor
+import com.aion.host.di.GmailToken
+import com.aion.host.di.TelegramToken
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,6 +33,8 @@ class BuiltInPluginRegistry
     constructor(
         executor: DispatcherActionExecutor,
         approvalGate: RealPluginApprovalGate,
+        @GmailToken gmailToken: String,
+        @TelegramToken telegramToken: String,
     ) {
         val manager = PluginManager(approvalGate)
 
@@ -40,6 +46,12 @@ class BuiltInPluginRegistry
                 CalendarPlugin(executor),
                 FilesPlugin(executor),
                 BrowserPlugin(executor),
+                // T-102 — registered like the other named built-ins: validated, but the owner's
+                // explicit 🧍HC-5 enable is what actually turns them on. A blank/missing token just
+                // means every real API call fails gracefully with a normal ToolResult error, same
+                // as ShizukuBridge degrading cleanly when Shizuku isn't installed.
+                GmailPlugin(gmailToken),
+                TelegramPlugin(telegramToken),
             ).forEach { manager.register(it) }
 
             manager.register(UIAutomationPlugin(executor))

@@ -67,6 +67,9 @@ dependencies {
     implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite)
     implementation(libs.mlkit.text.recognition)
+    // T-102 — GmailPlugin/TelegramPlugin (:brain) default-construct an HttpClient; that type must
+    // be resolvable here even though :android:app never builds one itself.
+    implementation(libs.ktor.client.core)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

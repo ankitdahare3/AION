@@ -1,0 +1,19 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.gmail. See bench/system.yaml for format notes.
+plugin: com.aion.plugin.gmail
+scenarios:
+  - name: check inbox
+    goal: "mera inbox check karo"
+    expectedTools: [list_messages]
+    requiresApproval: false
+  - name: read an email
+    goal: "yeh email padho"
+    expectedTools: [list_messages, read_message]
+    requiresApproval: false
+  - name: draft a reply
+    goal: "HR ko ek draft banao"
+    expectedTools: [compose_draft]
+    requiresApproval: false
+  - name: send an email
+    goal: "HR ko mail bhejo"
+    expectedTools: [send_email]
+    requiresApproval: true

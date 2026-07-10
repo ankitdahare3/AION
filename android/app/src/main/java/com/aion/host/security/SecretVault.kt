@@ -8,7 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** DOC-013 §5 — providers this alpha targets; each gets one key slot in [SecretVault]. */
+/** DOC-013 §5 / DOC-005 §5 — secrets this alpha needs (LLM providers + plugin API tokens); each gets one key slot in [SecretVault]. */
 enum class ProviderKey(
     val label: String,
     val prefKey: String,
@@ -16,6 +16,11 @@ enum class ProviderKey(
     GROQ("Groq API Key", "groq_api_key"),
     OPENROUTER("OpenRouter API Key", "openrouter_api_key"),
     GEMINI("Gemini API Key", "gemini_api_key"),
+
+    // T-102 — GmailPlugin expects a bare OAuth2 access token (no client id/secret flow built here,
+    // BACKLOG.md); TelegramPlugin expects a bot token from @BotFather, a single static secret.
+    GMAIL_ACCESS_TOKEN("Gmail Access Token", "gmail_access_token"),
+    TELEGRAM_BOT_TOKEN("Telegram Bot Token", "telegram_bot_token"),
 }
 
 /**

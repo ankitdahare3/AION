@@ -34,7 +34,8 @@ class BuiltInPluginsTest {
     @Test
     fun `every built-in manifest passes DNA validation`() {
         val calls = mutableListOf<PlanStep>()
-        for (plugin in plugins(recordingExecutor(calls))) {
+        val allPlugins: List<AionPlugin> = plugins(recordingExecutor(calls)) + listOf(GmailPlugin(""), TelegramPlugin(""))
+        for (plugin in allPlugins) {
             val result = DNAValidator.validate(plugin.manifest)
             assertTrue("${plugin.manifest.id} failed validation: $result", result is ValidationResult.Valid)
         }

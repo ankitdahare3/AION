@@ -1,0 +1,11 @@
+# DOC-005 §2 dna.benchmark for com.aion.plugin.telegram. See bench/system.yaml for format notes.
+plugin: com.aion.plugin.telegram
+scenarios:
+  - name: check messages
+    goal: "telegram check karo"
+    expectedTools: [get_updates]
+    requiresApproval: false
+  - name: send a message
+    goal: "usko telegram pe message bhejo"
+    expectedTools: [send_message]
+    requiresApproval: true
