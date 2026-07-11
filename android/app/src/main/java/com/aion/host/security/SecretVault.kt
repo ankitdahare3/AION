@@ -16,6 +16,7 @@ enum class ProviderKey(
     GROQ("Groq API Key", "groq_api_key"),
     OPENROUTER("OpenRouter API Key", "openrouter_api_key"),
     GEMINI("Gemini API Key", "gemini_api_key"),
+    NVIDIA("NVIDIA API Key", "nvidia_api_key"),
 
     // T-102 — GmailPlugin expects a bare OAuth2 access token (no client id/secret flow built here,
     // BACKLOG.md); TelegramPlugin expects a bot token from @BotFather, a single static secret.

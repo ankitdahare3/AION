@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,7 +34,10 @@ fun SecretsScreen(
 ) {
     val scope = rememberCoroutineScope()
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    // T-121 prep — the row list has no fixed length (ProviderKey.entries grows over time, T-102
+    // already added 2 more rows to what was originally a 3-row screen); without scroll, rows past
+    // the viewport are genuinely unreachable, found while entering real keys for the first time.
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text("API Keys", style = MaterialTheme.typography.headlineSmall)
         Text(
             "Stored only in Android Keystore-backed encrypted storage on this device.",
