@@ -5,6 +5,8 @@ import com.aion.brain.BrainRequest
 import com.aion.brain.BrainResult
 import com.aion.brain.BudgetGuard
 import com.aion.brain.ExecutionOutcome
+import com.aion.brain.Memory
+import com.aion.brain.MemoryStore
 import com.aion.brain.PlanStep
 import com.aion.brain.PluginApprovalGate
 import com.aion.brain.PluginManager
@@ -69,6 +71,18 @@ private fun scriptedProvider(text: String) =
             BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
     }
 
+/** T-117: PlannerAgent's optional device-profile context — no memories needed for these graph-wiring tests. */
+private val emptyMemoryStore =
+    object : MemoryStore {
+        override suspend fun insert(memory: Memory) = 0L
+
+        override suspend fun getAllActive(): List<Memory> = emptyList()
+
+        override suspend fun update(memory: Memory) {}
+
+        override suspend fun softDelete(id: Long) {}
+    }
+
 /** T-077: ExecutorAgent routes through PluginManager exclusively now — wrap the fake ActionExecutor in the real UIAutomationPlugin. */
 private fun pluginManagerWith(executor: ActionExecutor): PluginManager {
     val manager = PluginManager(PluginApprovalGate { _, _ -> true })
@@ -105,7 +119,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok:${step.action}")
                 }
 
-            val factory = AionGraphFactory(checkpointer)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
@@ -145,7 +159,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok")
                 }
 
-            val factory = AionGraphFactory(checkpointer)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "open settings"))

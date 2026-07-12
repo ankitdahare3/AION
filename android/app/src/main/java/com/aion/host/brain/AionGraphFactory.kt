@@ -3,6 +3,7 @@ package com.aion.host.brain
 import com.aion.brain.AionGraph
 import com.aion.brain.ApprovalGate
 import com.aion.brain.ExecutorAgent
+import com.aion.brain.MemoryStore
 import com.aion.brain.MemoryWriterAgent
 import com.aion.brain.PlannerAgent
 import com.aion.brain.PluginManager
@@ -35,6 +36,7 @@ class AionGraphFactory
     @Inject
     constructor(
         private val checkpointer: RoomCheckpointer,
+        private val memoryStore: MemoryStore,
     ) {
         fun create(
             router: ProviderRouter,
@@ -45,7 +47,7 @@ class AionGraphFactory
             return AionGraph(
                 nodes =
                     mapOf(
-                        "planner" to PlannerAgent(router),
+                        "planner" to PlannerAgent(router, memoryStore = memoryStore),
                         "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(),
                         "responder" to ResponderAgent(),

@@ -20,10 +20,16 @@ private data class PlanStepDto(
  *
  * [fewShotBank] (T-081, DOC-007 §3) is optional: when present, any counter-examples recorded for
  * this exact goal are folded into the system prompt as an explicit "don't repeat this" warning.
+ *
+ * [memoryStore] (T-117, BACKLOG.md) is optional too: when present, any `PROFILE` memories written
+ * by [DeviceExplorer]'s "Explore Device" scan (T-114) are folded in as a known-real-package list —
+ * the planner otherwise guesses plausible-but-often-wrong AOSP package names (`com.android.camera2`
+ * etc.) that don't exist on OEM-skinned devices (found via T-116's real Samsung benchmark run).
  */
 class PlannerAgent(
     private val router: ProviderRouter,
     private val fewShotBank: FewShotBank? = null,
+    private val memoryStore: MemoryStore? = null,
 ) : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val steps = callAndParse(s.goal, repairHint = false) ?: callAndParse(s.goal, repairHint = true)
@@ -62,16 +68,36 @@ class PlannerAgent(
         return parsePlan(result.text)
     }
 
-    private fun buildSystem(
+    private suspend fun buildSystem(
         goal: String,
         repairHint: Boolean,
     ): String {
-        val base = if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA
+        val base = withKnownApps(if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA)
         val counterExamples = fewShotBank?.examplesFor(goal).orEmpty()
         if (counterExamples.isEmpty()) return base
         val warnings =
             counterExamples.joinToString("\n") { "- Plan ${it.badPlanJson} was WRONG for this goal: ${it.reason}" }
         return "$base\n\nPrevious mistakes for this exact goal — do NOT repeat them:\n$warnings"
+    }
+
+    private suspend fun withKnownApps(base: String): String {
+        val packages =
+            memoryStore
+                ?.getAllActive()
+                ?.filter { it.kind == MemoryKind.PROFILE && it.provenance == DeviceExplorer.PROVENANCE }
+                ?.mapNotNull { packageNameOf(it.text) }
+                ?.distinct()
+                .orEmpty()
+        if (packages.isEmpty()) return base
+        return "$base\n\nApps actually installed on this device (use these EXACT package names for " +
+            "launchApp — never invent or guess a package name that isn't in this list):\n" +
+            packages.joinToString(", ")
+    }
+
+    // Memory.text is DeviceExplorer's own "App <pkg>: <screenText>" format.
+    private fun packageNameOf(memoryText: String): String? {
+        if (!memoryText.startsWith("App ")) return null
+        return memoryText.removePrefix("App ").substringBefore(':').trim().takeIf { it.isNotBlank() }
     }
 
     // T-121 finding — real models routinely ignore "no markdown fences" and wrap the array in

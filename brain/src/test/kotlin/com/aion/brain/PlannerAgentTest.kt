@@ -215,4 +215,106 @@ class PlannerAgentTest {
             assertEquals(1, result.plan.size)
             assertFalse(result.done)
         }
+
+    private fun memoryStoreOf(vararg memories: Memory) =
+        object : MemoryStore {
+            override suspend fun insert(memory: Memory) = 0L
+
+            override suspend fun getAllActive() = memories.toList()
+
+            override suspend fun update(memory: Memory) {}
+
+            override suspend fun softDelete(id: Long) {}
+        }
+
+    private fun deviceProfile(
+        pkg: String,
+        screenText: String = "some screen",
+    ) = Memory(
+        kind = MemoryKind.PROFILE,
+        text = "App $pkg: $screenText",
+        confidence = 1.0,
+        provenance = DeviceExplorer.PROVENANCE,
+        created = 0,
+        accessed = 0,
+        decayScore = 1.0,
+    )
+
+    // T-117 — real installed package names fold into the prompt, so the planner can pick one
+    // instead of guessing an AOSP name that may not exist on this device (T-116 finding).
+    @Test
+    fun `known installed packages from device-profile memories are folded into the system prompt`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"x","expected":"y","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val store = memoryStoreOf(deviceProfile("com.whatsapp"), deviceProfile("com.sec.android.app.camera"))
+            val agent = PlannerAgent(routerFor(provider), memoryStore = store)
+
+            agent.step(AgentState(goal = "whatsapp kholo"))
+
+            assertTrue(capturedSystem!!.contains("com.whatsapp"))
+            assertTrue(capturedSystem!!.contains("com.sec.android.app.camera"))
+        }
+
+    @Test
+    fun `non-PROFILE or differently-sourced memories are never treated as installed packages`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"x","expected":"y","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val unrelatedFact =
+                Memory(
+                    kind = MemoryKind.FACT,
+                    text = "App com.example.notreal: unrelated",
+                    confidence = 1.0,
+                    provenance = "some_other_source",
+                    created = 0,
+                    accessed = 0,
+                    decayScore = 1.0,
+                )
+            val agent = PlannerAgent(routerFor(provider), memoryStore = memoryStoreOf(unrelatedFact))
+
+            agent.step(AgentState(goal = "goal"))
+
+            assertFalse(capturedSystem!!.contains("com.example.notreal"))
+        }
+
+    @Test
+    fun `no memoryStore at all still plans normally (backwards compatible)`() =
+        runTest {
+            val provider = scriptedProvider(mapOf("wifi on karo" to goals.first().second))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = "wifi on karo"))
+
+            assertTrue(result.plan.isNotEmpty())
+        }
 }
