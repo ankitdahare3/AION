@@ -137,3 +137,14 @@
   name into `Memory(kind = PROFILE)` rows; the natural next step (already noted as an open gap in
   T-114's own scope note) is reading those PROFILE memories back into `PlannerAgent`'s context so it
   can pick a real installed package instead of guessing an AOSP one.
+
+- **A plain greeting can get planned as a device-automation task instead of a chat reply** — found
+  during T-130's live chat-screen verification: the goal "Namaste AION" (a pure US1 greeting, no
+  action implied) produced a real multi-step plan that opened Settings and asked to tap
+  "Auto-rotate". `IntentClassifier` (T-033, still the v1 keyword/pattern heuristic) is the likely
+  culprit — a short greeting with no action verb has few tokens to classify on and may be
+  defaulting to SIMPLE_ACTION/MULTI_STEP rather than CHAT. Not fixed inline here (T-130's own scope
+  was verifying the chat screen and the denial-response bug it exposed, not planner-classification
+  accuracy) — worth a dedicated look once IntentClassifier's real-LLM upgrade (already tracked
+  above, blocked on T-032) lands, or sooner if it recurs during T-131's benchmark re-run: check
+  whether any of the 50 benchmark goals are pure-chat phrasing being misclassified the same way.

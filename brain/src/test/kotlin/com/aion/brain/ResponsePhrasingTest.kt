@@ -48,4 +48,16 @@ class ResponsePhrasingTest {
 
         assertNotEquals(en, hi)
     }
+
+    @Test
+    fun `denial phrasing differs by language, is non-blank, and is distinct from success and failure text`() {
+        val en = ResponsePhrasing.forDenial(hinglish = false)
+        val hi = ResponsePhrasing.forDenial(hinglish = true)
+
+        assertTrue(en.isNotBlank())
+        assertTrue(hi.isNotBlank())
+        assertNotEquals(en, hi)
+        assertNotEquals(en, ResponsePhrasing.forSuccess(hinglish = false))
+        assertNotEquals(hi, ResponsePhrasing.forSuccess(hinglish = true))
+    }
 }

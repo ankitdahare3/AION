@@ -31,8 +31,19 @@ object ResponsePhrasing {
         hinglish: Boolean,
     ): String = (if (hinglish) FAILURE_HI else FAILURE_EN).getValue(cause)
 
+    /**
+     * A denied approval isn't a diagnosable [FailureCause] (E1-E6) — the user made a deliberate
+     * choice, not something that went wrong — so it gets its own small phrasing pair rather than
+     * an artificial UNKNOWN/E-code. Same "whoever sets done=true must also phrase the response"
+     * rule this file's own class doc describes for ReflectorAgent applies to RealApprovalGate.
+     */
+    fun forDenial(hinglish: Boolean): String = if (hinglish) DENIAL_HI else DENIAL_EN
+
     private const val SUCCESS_EN = "Done! That's taken care of."
     private const val SUCCESS_HI = "Ho gaya! Kaam ho gaya."
+
+    private const val DENIAL_EN = "Okay, I didn't do that — you said no when I asked to confirm."
+    private const val DENIAL_HI = "Theek hai, maine wo nahi kiya — aapne confirm karne se mana kar diya."
 
     private val FAILURE_EN =
         mapOf(

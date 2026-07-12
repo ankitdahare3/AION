@@ -2,6 +2,7 @@ package com.aion.host.brain
 
 import com.aion.brain.AgentState
 import com.aion.brain.PlanStep
+import com.aion.brain.ResponsePhrasing
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.AuditLogger
 import com.aion.host.security.FakeAuditDao
@@ -60,6 +61,7 @@ class RealApprovalGateTest {
             assertTrue(result!!.done)
             assertFalse(result!!.failures.isEmpty())
             assertTrue(result!!.failures.last().contains("send"))
+            assertEquals(ResponsePhrasing.forDenial(hinglish = false), result!!.response)
         }
 
     @Test
