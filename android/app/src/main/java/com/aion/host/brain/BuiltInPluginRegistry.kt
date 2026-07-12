@@ -23,9 +23,19 @@ import javax.inject.Singleton
  * [UIAutomationPlugin] is auto-`enable()`d: it's the generic-fallback baseline `ExecutorAgent`
  * already used directly before T-077 (dispatching gestures via the accessibility service) — routing
  * it through `PluginManager` doesn't grant any *new* capability, so gating it behind 🧍HC-5 the same
- * way as the other 6 would just be friction with no actual safety benefit. The named built-ins
- * (System, Contacts, ...) stay registered-but-disabled: those genuinely are new, curated
- * capabilities, and enabling them is the owner's explicit call, never made on their behalf.
+ * way as the other 8 would've been friction with no actual safety benefit.
+ *
+ * The 8 named built-ins (System, Contacts, Phone/SMS, Calendar, Files, Browser, Gmail, Telegram)
+ * are now enabled too — 🧍HC-5, done directly by the owner (chat instruction, 2026-07-12), not
+ * self-certified. Enabling only makes a plugin reachable via [PluginManager.route]: every
+ * `sideEffect:true` tool call still goes through [RealPluginApprovalGate] individually regardless
+ * of enable state (DOC-005 §4), and all 6 non-Gmail/Telegram plugins only ever translate a tool
+ * call into a [com.aion.brain.PlanStep] dispatched through the same accessibility-service
+ * `DispatcherActionExecutor` every other action already goes through (T-071..076: "tap/launchApp/
+ * globalAction only") — no new Android permission is required by this change. Gmail/Telegram
+ * remain safe to enable with a blank/missing token: every real API call just fails gracefully with
+ * a normal `ToolResult` error, same as `ShizukuBridge` degrading cleanly when Shizuku isn't
+ * installed (T-102).
  */
 @Singleton
 class BuiltInPluginRegistry
@@ -46,13 +56,12 @@ class BuiltInPluginRegistry
                 CalendarPlugin(executor),
                 FilesPlugin(executor),
                 BrowserPlugin(executor),
-                // T-102 — registered like the other named built-ins: validated, but the owner's
-                // explicit 🧍HC-5 enable is what actually turns them on. A blank/missing token just
-                // means every real API call fails gracefully with a normal ToolResult error, same
-                // as ShizukuBridge degrading cleanly when Shizuku isn't installed.
                 GmailPlugin(gmailToken),
                 TelegramPlugin(telegramToken),
-            ).forEach { manager.register(it) }
+            ).forEach {
+                manager.register(it)
+                manager.enable(it.manifest.id)
+            }
 
             manager.register(UIAutomationPlugin(executor))
             manager.enable(UIAutomationPlugin.ID)

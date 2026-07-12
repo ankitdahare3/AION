@@ -10,14 +10,13 @@ import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.AuditLogger
 import com.aion.host.security.FakeAuditDao
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** T-071..076/T-077/T-102 AC — the 8 named built-ins register (validated) but stay disabled until the owner's explicit 🧍HC-5 enable; UIAutomation (the pre-existing baseline) is auto-enabled. */
+/** T-071..076/T-077/T-102/T-116 AC — the 8 named built-ins register (validated) and, per the owner's explicit 🧍HC-5 chat instruction (2026-07-12), are enabled; UIAutomation (the pre-existing baseline) is auto-enabled regardless. */
 class BuiltInPluginRegistryTest {
     @Test
-    fun `the 8 named built-ins register successfully but none are enabled by default`() =
+    fun `the 8 named built-ins register successfully and are enabled per the owner's explicit HC-5 approval`() =
         runTest {
             val auditLogger = AuditLogger(FakeAuditDao())
             val executor = DispatcherActionExecutor(ActionDispatcher(auditLogger), MlKitOcrEngine())
@@ -37,9 +36,15 @@ class BuiltInPluginRegistryTest {
                     "com.aion.plugin.telegram",
                 )
             for (id in ids) {
-                assertFalse("$id should not be enabled without owner approval (HC-5)", registry.manager.isEnabled(id))
-                val routed = registry.manager.route(id, ToolCall("anything", "{}", false))
-                assertTrue("$id routed while disabled: $routed", routed is PluginRouteResult.Rejected)
+                assertTrue("$id should be enabled per the owner's explicit HC-5 approval", registry.manager.isEnabled(id))
+                // A bogus tool name still gets rejected — but now for "no tool named", not "not
+                // enabled" (PluginManager.route checks enabled state BEFORE tool lookup), proving
+                // routing genuinely reaches past the enable gate rather than isEnabled() alone.
+                val routed = registry.manager.route(id, ToolCall("definitely_not_a_real_tool", "{}", false))
+                assertTrue(
+                    "$id: expected an unknown-tool rejection now that it's enabled, got $routed",
+                    routed is PluginRouteResult.Rejected && (routed as PluginRouteResult.Rejected).reason.contains("no tool named"),
+                )
             }
         }
 
