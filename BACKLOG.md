@@ -148,3 +148,20 @@
   accuracy) — worth a dedicated look once IntentClassifier's real-LLM upgrade (already tracked
   above, blocked on T-032) lands, or sooner if it recurs during T-131's benchmark re-run: check
   whether any of the 50 benchmark goals are pure-chat phrasing being misclassified the same way.
+
+- **`IntentClassifier` (T-033) is built but never wired into the live `AionGraphFactory` graph** —
+  found 2026-07-12 while trying to verify T-137's AC ("a chat question about the latest
+  notification" should surface it). The graph always routes every goal straight through
+  `PlannerAgent`, which only ever produces a tap/launchApp/globalAction plan — there is no
+  conversational/CHAT path at all today, regardless of what IntentClassifier would say. This is the
+  exact same root cause as the "Namaste AION" greeting getting planned as a Settings-automation
+  task (found during T-130's live verification, noted above). It also means no goal has any path to
+  answer a factual question from memory: `PlannerAgent.withKnownApps` (T-117) only ever folds
+  `PROFILE` memories into the ACTION-planning prompt, never a conversational response. Wiring
+  IntentClassifier into the graph — routing CHAT-classified goals to a real conversational
+  node/path that can read recent memories (including T-137's new notification-sourced FACT
+  memories) and answer in natural language — is real, scoped work: touches `AionGraphFactory`'s
+  node map and routing closure, likely needs a new `Agent` (a "chat responder" distinct from
+  `ResponderAgent`'s post-execution phrasing role) and a decision on how ContextBuilder folds
+  recent FACT memories into that path's prompt. Sized bigger than a 2-3 file task — propose as its
+  own task once picked up, not built speculatively alongside T-137.
