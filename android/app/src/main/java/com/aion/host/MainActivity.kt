@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,6 +60,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // T-116 finding — no theme in this project sets windowNoTitle, so the platform's default
+        // decor ActionBar renders on top of this fully-Compose UI. Compose content starts at the
+        // window's own y=0 with no inset awareness, so anything within the ActionBar's height is
+        // silently covered by it — invisible AND untappable. Height varies by OEM skin (barely
+        // clipped the button row on stock/emulator, fully hid it on this device's Samsung skin),
+        // which is exactly why it never showed up until now. The app never used the title bar for
+        // anything, so hiding it outright is the fix, not working around it with inset padding.
+        actionBar?.hide()
         setContent { AionApp(resumeTrigger, auditLogger, approvalGateService, secretVault) }
     }
 
@@ -92,8 +102,18 @@ private fun AionApp(
         Surface(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    // T-116 finding — 4 TextButtons with no width constraint overflow a real
+                    // phone's screen width (font-scale/density-dependent; never showed up on the
+                    // emulator's default settings). Without horizontalScroll, Compose's Row squeezes
+                    // the last child ("Explore Device") into a tall, narrow multi-line wrap instead
+                    // of just clipping — same "4th+ item unreachable" shape as SecretsScreen's T-120
+                    // vertical-scroll fix, here on the horizontal axis.
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(8.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = {

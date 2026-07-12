@@ -122,3 +122,18 @@
   or `AgentState`'s construction ever changes to allow an empty plan, this branch needs the same
   `ResponsePhrasing` treatment the other three call sites got, or a raw "plan complete" string would
   reach the user unnaturalized.
+
+- **Planner guesses AOSP-style package names, which don't exist on Samsung's (or any OEM-skinned)
+  device** — found via T-116's real-device benchmark re-run (real Samsung SM-G990E, One UI). Stock
+  Android package names the planner (and `BenchmarkTasks`' own launch-goal phrasing) assume —
+  `com.android.camera2`, `com.android.gallery3d`, `com.android.mms`, `com.android.calendar` — simply
+  don't exist on this device; Samsung ships its own Camera/Gallery/Messages/Calendar/Contacts apps
+  under entirely different package names. Distinct failure mode from "the app genuinely isn't
+  installed" (T-121's finding on the bare AOSP emulator) — here the equivalent app IS installed,
+  just under a name the planner never considers, so every OEM device this ships to will hit its own
+  version of this gap. Not a hardcoded Samsung package list (a losing game across OEMs/versions) —
+  the real fix is feeding the planner real, device-specific package names at prompt time. T-114's
+  `DeviceExplorer`/`DeviceExplorationWorker` already scans every installed launchable app's package
+  name into `Memory(kind = PROFILE)` rows; the natural next step (already noted as an open gap in
+  T-114's own scope note) is reading those PROFILE memories back into `PlannerAgent`'s context so it
+  can pick a real installed package instead of guessing an AOSP one.
