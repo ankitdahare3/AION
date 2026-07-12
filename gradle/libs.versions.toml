@@ -41,6 +41,8 @@ androidxSqlite = "2.4.0"
 # the Devanagari model (com.google.mlkit:text-recognition-devanagari) is a separate dependency,
 # deferred until there's a real Hindi-text golden fixture to test it against (BACKLOG.md).
 mlkitTextRecognition = "16.0.1"
+# BiometricPrompt compat wrapper (T-138, DOC-017 §5 T6). 1.1.0 is the current stable release.
+biometric = "1.1.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -77,6 +79,7 @@ shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuk
 sqlcipher-android = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
 androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "androidxSqlite" }
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

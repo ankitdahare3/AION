@@ -2,17 +2,19 @@ package com.aion.host
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,14 +23,17 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import com.aion.brain.ProviderRouter
 import com.aion.host.brain.AionGraphFactory
@@ -36,6 +41,7 @@ import com.aion.host.brain.BuiltInPluginRegistry
 import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.brain.RealApprovalGate
+import com.aion.host.security.AppLockGate
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
@@ -49,9 +55,14 @@ import javax.inject.Inject
 
 private enum class Screen { SETUP, AUDIT_LOG, API_KEYS, CHAT }
 
-/** DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen. */
+/**
+ * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
+ * Extends [FragmentActivity] (not the plain `ComponentActivity` every other screen-hosting activity
+ * in this app would otherwise use) because T-138's [AppLockGate]/[androidx.biometric.BiometricPrompt]
+ * requires one — Compose's `setContent` works identically on either base class.
+ */
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     @Inject
     lateinit var auditLogger: AuditLogger
 
@@ -75,6 +86,11 @@ class MainActivity : ComponentActivity() {
 
     private var resumeTrigger by mutableIntStateOf(0)
 
+    // T-138 — starts locked; a device with neither biometrics nor a screen lock enrolled skips the
+    // gate entirely (AppLockGate.canAuthenticate == false) rather than stranding the owner outside
+    // their own app with no way in.
+    private var unlocked by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // T-116 finding — no theme in this project sets windowNoTitle, so the platform's default
@@ -85,23 +101,51 @@ class MainActivity : ComponentActivity() {
         // which is exactly why it never showed up until now. The app never used the title bar for
         // anything, so hiding it outright is the fix, not working around it with inset padding.
         actionBar?.hide()
+        if (!AppLockGate.canAuthenticate(this)) unlocked = true
         setContent {
-            AionApp(
-                resumeTrigger,
-                auditLogger,
-                approvalGateService,
-                secretVault,
-                graphFactory,
-                providerRouter,
-                pluginRegistry,
-                realApprovalGate,
-            )
+            if (unlocked) {
+                AionApp(
+                    resumeTrigger,
+                    auditLogger,
+                    approvalGateService,
+                    secretVault,
+                    graphFactory,
+                    providerRouter,
+                    pluginRegistry,
+                    realApprovalGate,
+                )
+            } else {
+                LockScreen(onUnlockTap = ::attemptUnlock)
+            }
         }
+    }
+
+    private fun attemptUnlock() {
+        AppLockGate.authenticate(this, onSuccess = { unlocked = true }, onFailure = {})
     }
 
     override fun onResume() {
         super.onResume()
         resumeTrigger++
+    }
+}
+
+/** T-138 — auto-prompts on first composition; the button is a manual retry if that prompt is dismissed. */
+@Composable
+private fun LockScreen(onUnlockTap: () -> Unit) {
+    LaunchedEffect(Unit) { onUnlockTap() }
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text("AION is locked", style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = onUnlockTap) { Text("Unlock") }
+            }
+        }
     }
 }
 
