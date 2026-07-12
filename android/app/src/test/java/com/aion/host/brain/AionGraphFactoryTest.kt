@@ -105,8 +105,8 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok:${step.action}")
                 }
 
-            val factory = AionGraphFactory(approvalGate, checkpointer)
-            val graph = factory.create(router, pluginManagerWith(executor))
+            val factory = AionGraphFactory(checkpointer)
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
             testScheduler.advanceUntilIdle()
@@ -145,8 +145,8 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok")
                 }
 
-            val factory = AionGraphFactory(approvalGate, checkpointer)
-            val graph = factory.create(router, pluginManagerWith(executor))
+            val factory = AionGraphFactory(checkpointer)
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "open settings"))
             testScheduler.advanceUntilIdle()

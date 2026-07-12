@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
@@ -110,6 +112,12 @@ private fun AionApp(
                             screen = if (screen == Screen.AUDIT_LOG) Screen.SETUP else Screen.AUDIT_LOG
                         }) {
                             Text(if (screen == Screen.AUDIT_LOG) "Back to Setup" else "Audit Log")
+                        }
+                        TextButton(onClick = {
+                            DeviceExplorationScheduler.triggerNow(context)
+                            Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("Explore Device")
                         }
                     }
                     when (screen) {

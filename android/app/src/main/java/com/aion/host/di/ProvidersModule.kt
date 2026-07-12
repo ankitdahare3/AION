@@ -31,9 +31,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ProvidersModule {
+    // @JvmSuppressWildcards — without it, Dagger's Hilt *test* components (only surfaced once a
+    // second @HiltAndroidTest class also injected ProviderRouter) see List<Provider> and
+    // List<? extends Provider> as mismatched binding types; this forces the plain Java signature.
     @Provides
     @Singleton
-    fun provideProviderRegistry(secretVault: SecretVault): List<Provider> =
+    fun provideProviderRegistry(secretVault: SecretVault): @JvmSuppressWildcards List<Provider> =
         listOfNotNull(
             secretVault.get(ProviderKey.GROQ)?.takeIf { it.isNotBlank() }?.let {
                 OpenAiCompatProvider(
@@ -85,7 +88,7 @@ object ProvidersModule {
     @Provides
     @Singleton
     fun provideProviderRouter(
-        registry: List<Provider>,
+        registry: @JvmSuppressWildcards List<Provider>,
         scoreStore: ScoreStore,
         budget: BudgetGuard,
     ): ProviderRouter = ProviderRouter(registry, ExploringScoreStore(scoreStore), budget)

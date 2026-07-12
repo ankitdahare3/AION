@@ -55,3 +55,37 @@
   screen/vision content to any cloud endpoint (OCR is on-device-only, T-100; Gmail/Telegram, T-102,
   only ever send what the user explicitly composes). Must land alongside whichever task first wires
   a real cloud vision/multimodal path (DOC-012 §2), not after.
+
+- **`AionAccessibilityService.captureScreenshot()` fails on every real call with "Services don't
+  have the capability of taking the screenshot."** — found in T-121's real 50-task benchmark run
+  (4/50 tasks hit this, all via `DispatcherActionExecutor.captureVision()`'s a11y-empty fallback:
+  MAPS "current location check karo", "distance to office check karo", "nearby petrol pump dhundo",
+  MEDIA "video pause karo"). `accessibility_service_config.xml` declares no screenshot capability
+  at all (`android:canRetrieveWindowContent` only) — `takeScreenshot()` (API 30+) needs the service
+  to actually hold `AccessibilityServiceInfo.CAPABILITY_CAN_TAKE_SCREENSHOT`, which isn't requested
+  anywhere. Not fixed inline while writing up T-121 because the exact declaration mechanism
+  (manifest XML attribute vs. a runtime `AccessibilityServiceInfo.setCapabilities()` call, and its
+  real minSdk gate) needs verifying against the actual framework source/decompile first — same
+  "confirm before touching a security-relevant service config" discipline as T-110's
+  `Constraints.Builder` decompile — rather than guessing an attribute name into a shipped XML file.
+  Whoever picks this up next: fix this FIRST, then re-run T-121's benchmark — it's the cheapest,
+  most isolated fix among everything the run surfaced (one config gap, one clear error message
+  naming the exact missing capability) and should lift MAPS/MEDIA's real pass rate directly.
+
+- **T-121's real 50-task benchmark honest result: 7/50 (14%), well below the ≥60% target** — see
+  `docs/T-121_BENCHMARK_REPORT.json` (full per-task results) and TASKS.md's T-121 entry for the
+  full breakdown. Two other real gaps besides the screenshot one above, in order of how many tasks
+  they cost: (1) 19/50 failures are `no launch intent for <pkg>` — this bare `aion_test` AVD simply
+  doesn't have WhatsApp/Calendar/Paytm/GPay/banking apps/Play Music/Gallery installed, an ENVIRONMENT
+  gap, not an AION bug; re-running against a Play Store-enabled AVD (or the eventual real dedicated
+  phone) with those apps actually installed should resolve most of this bucket on its own, no code
+  change needed. (2) 16/50 are `could not resolve element: <X>` — the planner (real Groq/NVIDIA/
+  OpenRouter output, not scripted) guesses plausible-sounding on-screen label text ("Wi-Fi toggle",
+  "Turn on", "Missed calls", "Save") that doesn't match the real app's actual visible strings closely
+  enough for `ElementResolver`'s fuzzy match; this is a genuine planner-grounding gap — the planner
+  has no real knowledge of what's actually on any given app's screen before guessing a target string.
+  T-114's new device-profile memories (`DeviceExplorer`/`DeviceExplorationWorker`) are aimed exactly
+  at this problem but aren't wired into `PlannerAgent`'s prompt/context yet — that wiring is the
+  natural next step and should directly improve this bucket once built. (3) 4/50 are the
+  already-known `gesture callback never fired within 5000ms` (`ActionDispatcher`'s own documented
+  emulator-reliability gap, T-041).

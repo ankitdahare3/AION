@@ -178,4 +178,35 @@ class PlannerAgentTest {
             assertTrue(result.plan.isEmpty())
             assertTrue(result.failures.any { it.contains("planner") })
         }
+
+    // T-121 finding — real models routinely ignore "no markdown fences" anyway.
+    @Test
+    fun `parses a plan wrapped in markdown code fences despite being told not to`() =
+        runTest {
+            val fenced =
+                "```json\n" +
+                    """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]""" +
+                    "\n```"
+            val provider = scriptedProvider(mapOf("wifi on karo" to fenced))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = "wifi on karo"))
+
+            assertEquals(1, result.plan.size)
+            assertFalse(result.done)
+        }
+
+    @Test
+    fun `parses a plan with a stray sentence before and after the array`() =
+        runTest {
+            val chatty =
+                "Sure, here's the plan:\n" +
+                    """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]""" +
+                    "\nLet me know if you need anything else!"
+            val provider = scriptedProvider(mapOf("wifi on karo" to chatty))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = "wifi on karo"))
+
+            assertEquals(1, result.plan.size)
+            assertFalse(result.done)
+        }
 }

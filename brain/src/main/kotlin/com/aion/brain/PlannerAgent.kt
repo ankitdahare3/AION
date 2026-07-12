@@ -66,20 +66,59 @@ class PlannerAgent(
         return "$base\n\nPrevious mistakes for this exact goal — do NOT repeat them:\n$warnings"
     }
 
-    private fun parsePlan(text: String): List<PlanStep>? =
-        try {
+    // T-121 finding — real models routinely ignore "no markdown fences" and wrap the array in
+    // ```json ... ``` anyway, or add a stray sentence before/after it. Rather than a stricter
+    // prompt (already tried, didn't help) or a second repair round-trip for something this
+    // mechanical, extract from the first '[' to the last ']' before parsing — the same defensive
+    // technique most real-world LLM-JSON integrations end up needing.
+    private fun parsePlan(text: String): List<PlanStep>? {
+        val jsonArray = extractJsonArray(text) ?: return null
+        return try {
             Json
-                .decodeFromString<List<PlanStepDto>>(text.trim())
+                .decodeFromString<List<PlanStepDto>>(jsonArray)
                 .map { PlanStep(it.action, it.target, it.expected, it.sideEffect) }
                 .takeIf { it.isNotEmpty() }
         } catch (e: SerializationException) {
             null
         }
+    }
+
+    private fun extractJsonArray(text: String): String? {
+        val start = text.indexOf('[')
+        val end = text.lastIndexOf(']')
+        if (start == -1 || end == -1 || end < start) return null
+        return text.substring(start, end + 1)
+    }
 
     private companion object {
+        // T-121 finding — ExecutorAgent routes every step through UIAutomationPlugin exclusively
+        // (T-077), and DispatcherActionExecutor only actually implements these 4 actions today;
+        // "type"/"swipe"/"scrollTo" are declared in UIAutomationPlugin's manifest but return
+        // "not yet supported" at execution time (PlanStep has no field for typed text, BACKLOG.md).
+        // The planner had no idea any of this before — it was guessing action names blind.
+        // T-121's second real finding: the original prompt said "matching this schema exactly" but
+        // the schema itself only ever traveled in BrainRequest.jsonSchema — which NO provider
+        // adapter actually transmits to any API (OpenAiCompatProvider/GeminiProvider send
+        // model/messages/maxTokens only). Real models had never seen the schema and consistently
+        // omitted the required "expected" field, failing every real parse; scripted-provider tests
+        // never caught it because they echo canned JSON. The step shape now lives IN the prompt.
         const val PERSONA =
-            "You are AION's planner. Given a goal, output ONLY a JSON array of steps, matching this " +
-                "schema exactly. No prose, no markdown fences, no explanation — the JSON array is the entire response."
+            "You are AION's planner. Given a goal, output ONLY a JSON array of steps. No prose, no " +
+                "markdown fences, no explanation — the JSON array is the entire response.\n\n" +
+                "Every step MUST be an object with ALL of these fields:\n" +
+                """{"action": "<action name>", "target": "<target>", "expected": "<what is true after this step succeeds>", "sideEffect": <true|false>}""" +
+                "\n\nExample response:\n" +
+                """[{"action":"launchApp","target":"com.android.settings","expected":"Settings app open","sideEffect":false},""" +
+                """{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi settings open","sideEffect":false}]""" +
+                "\n\nYou may ONLY use these action names — anything else will fail to execute:\n" +
+                "- tap: target = visible text/label of the element to tap (fuzzy-matched on screen)\n" +
+                "- longPress: same as tap, but a long press\n" +
+                "- launchApp: target = the app's Android package name (e.g. com.android.settings)\n" +
+                "- globalAction: target = one of BACK, HOME, RECENTS\n" +
+                "Set sideEffect true for any step that is irreversible or outward-facing (sending, deleting, " +
+                "posting, purchasing). Typing text into a field is NOT currently possible — never plan a step " +
+                "that requires it; if the goal cannot be done with only tap/longPress/launchApp/globalAction, " +
+                "do your best with what's available rather than inventing an unsupported action."
         const val REPAIR_HINT =
             "Your previous response was not valid JSON matching the schema. Output ONLY the JSON array this time."
         const val PLAN_SCHEMA =

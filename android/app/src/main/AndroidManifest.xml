@@ -15,6 +15,18 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- T-121 finding — API 30+ package-visibility filtering made getLaunchIntentForPackage()
+         (ActionDispatcher.launchApp, T-041) return null for nearly every installed app, including
+         correct, present packages like com.google.android.youtube; latent since T-041 because
+         com.android.settings (the only package earlier tests launched) is visible by default.
+         Scoped to launchable apps — exactly what an automation assistant needs — rather than the
+         Play-policy-restricted QUERY_ALL_PACKAGES. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AionApplication"
         android:allowBackup="false"

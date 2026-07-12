@@ -1,6 +1,7 @@
 package com.aion.host.brain
 
 import com.aion.brain.AionGraph
+import com.aion.brain.ApprovalGate
 import com.aion.brain.ExecutorAgent
 import com.aion.brain.MemoryWriterAgent
 import com.aion.brain.PlannerAgent
@@ -13,14 +14,15 @@ import javax.inject.Singleton
 
 /**
  * T-053/T-077 — assembles a real [AionGraph] per DOC-004 §2's standard flow: planner → executor →
- * (fail → reflector → planner) → responder → memory_writer → END. `router`/`pluginManager` are
- * passed in per-call rather than Hilt-injected: a real [ProviderRouter] needs live provider API
- * keys (T-031 🧍HC-3, not entered yet), and `pluginManager` must already have
+ * (fail → reflector → planner) → responder → memory_writer → END. `router`/`pluginManager`/
+ * `approval` are all passed in per-call rather than Hilt-injected: a real [ProviderRouter] needs
+ * live provider API keys (T-031 🧍HC-3), `pluginManager` must already have
  * `com.aion.plugin.uiautomation` registered+enabled (see [BuiltInPluginRegistry]) — a real
- * `DispatcherActionExecutor` needs a live `AionAccessibilityService`. Everything else here —
- * approval, checkpointing — is real today. Voice input (EPIC 2, not built) is out of scope: a goal
- * from `VoiceSessionManager` would just be another `String` passed to [create]'s resulting graph,
- * nothing here needs to change for that.
+ * `DispatcherActionExecutor` needs a live `AionAccessibilityService` — and `approval` varies by
+ * caller: [RealApprovalGate] for a live run, a scripted one for an unattended benchmark (T-121)
+ * where nobody's tapping the approval sheet. Voice input (EPIC 2, not built) is out of scope: a
+ * goal from `VoiceSessionManager` would just be another `String` passed to [create]'s resulting
+ * graph, nothing here needs to change for that.
  *
  * DOC-004's diagram also names a separate "verifier" node; that's folded into the executor path
  * instead — verification needs the exact before/after screen text `DispatcherActionExecutor`
@@ -32,12 +34,12 @@ import javax.inject.Singleton
 class AionGraphFactory
     @Inject
     constructor(
-        private val approvalGate: RealApprovalGate,
         private val checkpointer: RoomCheckpointer,
     ) {
         fun create(
             router: ProviderRouter,
             pluginManager: PluginManager,
+            approval: ApprovalGate,
         ): AionGraph {
             var lastFailureCount = 0
             return AionGraph(
@@ -66,7 +68,7 @@ class AionGraphFactory
                         else -> AionGraph.END
                     }
                 },
-                approval = approvalGate,
+                approval = approval,
                 checkpoints = checkpointer,
             )
         }

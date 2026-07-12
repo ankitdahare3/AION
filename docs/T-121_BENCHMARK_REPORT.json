@@ -1,0 +1,415 @@
+{
+    "totalTasks": 50,
+    "successCount": 7,
+    "successRate": 0.14,
+    "byCategory": {
+        "MESSAGING": 0.125,
+        "SETTINGS": 0.1111111111111111,
+        "CALENDAR": 0.0,
+        "MAPS": 0.25,
+        "MEDIA": 0.3333333333333333,
+        "FINANCE_READONLY": 0.0
+    },
+    "results": [
+        {
+            "goal": "send a message to Ravi saying running late",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "AION couldn't complete \"send a message to Ravi saying running late\": no launch intent for com.whatsapp (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 3684,
+            "stepCount": 3
+        },
+        {
+            "goal": "WhatsApp khol ke naya message bhejo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "AION couldn't complete \"WhatsApp khol ke naya message bhejo\": no launch intent for com.whatsapp (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2669,
+            "stepCount": 3
+        },
+        {
+            "goal": "reply to the last message saying ok",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "AION couldn't complete \"reply to the last message saying ok\": no launch intent for com.whatsapp (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 1985,
+            "stepCount": 3
+        },
+        {
+            "goal": "messages app kholo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "AION couldn't complete \"messages app kholo\": no launch intent for com.android.messaging (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2048,
+            "stepCount": 3
+        },
+        {
+            "goal": "unread messages check karo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "AION couldn't complete \"unread messages check karo\": no launch intent for com.whatsapp (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2703,
+            "stepCount": 3
+        },
+        {
+            "goal": "mummy ko call karo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Mummy",
+            "latencyMs": 33741,
+            "stepCount": 14
+        },
+        {
+            "goal": "dialer kholo",
+            "category": "MESSAGING",
+            "success": true,
+            "response": "Done: dialer kholo",
+            "latencyMs": 4696,
+            "stepCount": 3
+        },
+        {
+            "goal": "missed calls check karo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Missed calls",
+            "latencyMs": 12329,
+            "stepCount": 14
+        },
+        {
+            "goal": "wifi on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Wi-Fi toggle",
+            "latencyMs": 7689,
+            "stepCount": 16
+        },
+        {
+            "goal": "bluetooth band karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Turn on",
+            "latencyMs": 10805,
+            "stepCount": 23
+        },
+        {
+            "goal": "dark mode on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Toggle",
+            "latencyMs": 47775,
+            "stepCount": 30
+        },
+        {
+            "goal": "battery percentage batao",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: gesture callback never fired within 5000ms",
+            "latencyMs": 16194,
+            "stepCount": 8
+        },
+        {
+            "goal": "screen brightness settings kholo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Brightness level",
+            "latencyMs": 24420,
+            "stepCount": 14
+        },
+        {
+            "goal": "storage space check karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: gesture callback never fired within 5000ms",
+            "latencyMs": 15008,
+            "stepCount": 8
+        },
+        {
+            "goal": "notification settings kholo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: gesture callback never fired within 5000ms",
+            "latencyMs": 15672,
+            "stepCount": 8
+        },
+        {
+            "goal": "airplane mode on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Use Flight mode",
+            "latencyMs": 9321,
+            "stepCount": 23
+        },
+        {
+            "goal": "settings kholo",
+            "category": "SETTINGS",
+            "success": true,
+            "response": "Done: settings kholo",
+            "latencyMs": 2398,
+            "stepCount": 3
+        },
+        {
+            "goal": "calendar app kholo",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "AION couldn't complete \"calendar app kholo\": no launch intent for com.android.calendar (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2445,
+            "stepCount": 3
+        },
+        {
+            "goal": "aaj ke events dikhao",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Today",
+            "latencyMs": 4485,
+            "stepCount": 8
+        },
+        {
+            "goal": "kal ka schedule check karo",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Tomorrow",
+            "latencyMs": 6402,
+            "stepCount": 14
+        },
+        {
+            "goal": "add a new event tomorrow at 5pm called meeting",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "AION couldn't complete \"add a new event tomorrow at 5pm called meeting\": no launch intent for com.android.calendar (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2242,
+            "stepCount": 3
+        },
+        {
+            "goal": "next week ka calendar dekho",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "AION couldn't complete \"next week ka calendar dekho\": no launch intent for com.android.calendar (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2032,
+            "stepCount": 3
+        },
+        {
+            "goal": "set a reminder for the doctor appointment",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Save",
+            "latencyMs": 11616,
+            "stepCount": 25
+        },
+        {
+            "goal": "is week ke events count karo",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "AION couldn't complete \"is week ke events count karo\": no launch intent for com.google.calendar (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2437,
+            "stepCount": 3
+        },
+        {
+            "goal": "calendar mein aaj jao",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "AION couldn't complete \"calendar mein aaj jao\": no launch intent for com.android.calendar (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 1883,
+            "stepCount": 3
+        },
+        {
+            "goal": "google maps kholo",
+            "category": "MAPS",
+            "success": true,
+            "response": "Done: google maps kholo",
+            "latencyMs": 2079,
+            "stepCount": 3
+        },
+        {
+            "goal": "current location check karo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 2133,
+            "stepCount": 0
+        },
+        {
+            "goal": "search for nearest coffee shop",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Coffee",
+            "latencyMs": 6912,
+            "stepCount": 14
+        },
+        {
+            "goal": "traffic check karo maps mein",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Traffic",
+            "latencyMs": 5946,
+            "stepCount": 14
+        },
+        {
+            "goal": "navigate home",
+            "category": "MAPS",
+            "success": true,
+            "response": "Done: navigate home",
+            "latencyMs": 2585,
+            "stepCount": 3
+        },
+        {
+            "goal": "distance to office check karo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 1984,
+            "stepCount": 0
+        },
+        {
+            "goal": "maps mein saved places dekho",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Saved places",
+            "latencyMs": 4397,
+            "stepCount": 8
+        },
+        {
+            "goal": "nearby petrol pump dhundo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 9105,
+            "stepCount": 0
+        },
+        {
+            "goal": "youtube kholo",
+            "category": "MEDIA",
+            "success": true,
+            "response": "Done: youtube kholo",
+            "latencyMs": 2315,
+            "stepCount": 3
+        },
+        {
+            "goal": "music play karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "AION couldn't complete \"music play karo\": no launch intent for com.google.android.music (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2132,
+            "stepCount": 3
+        },
+        {
+            "goal": "gallery kholo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "AION couldn't complete \"gallery kholo\": no launch intent for com.android.gallery3d (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 1134,
+            "stepCount": 3
+        },
+        {
+            "goal": "camera se photo lo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Shutter button",
+            "latencyMs": 3894,
+            "stepCount": 10
+        },
+        {
+            "goal": "camera kholo",
+            "category": "MEDIA",
+            "success": true,
+            "response": "Done: camera kholo",
+            "latencyMs": 1889,
+            "stepCount": 3
+        },
+        {
+            "goal": "video pause karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 2056,
+            "stepCount": 0
+        },
+        {
+            "goal": "volume badhao",
+            "category": "MEDIA",
+            "success": true,
+            "response": "nothing to reflect on",
+            "latencyMs": 35186,
+            "stepCount": 33
+        },
+        {
+            "goal": "next song play karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "AION couldn't complete \"next song play karo\": no launch intent for com.google.android.music (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2266,
+            "stepCount": 3
+        },
+        {
+            "goal": "lofi music youtube pe dhundo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: lofi music",
+            "latencyMs": 23515,
+            "stepCount": 14
+        },
+        {
+            "goal": "bank balance check karo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"bank balance check karo\": no launch intent for com.android.apps.banking (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2194,
+            "stepCount": 3
+        },
+        {
+            "goal": "google pay kholo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"google pay kholo\": no launch intent for com.google.android.apps.nbu.paisa.user (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 1929,
+            "stepCount": 3
+        },
+        {
+            "goal": "recent transactions dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Something went wrong: could not resolve element: Transactions",
+            "latencyMs": 48533,
+            "stepCount": 21
+        },
+        {
+            "goal": "UPI balance check karo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"UPI balance check karo\": no launch intent for com.google.pay (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 3423,
+            "stepCount": 3
+        },
+        {
+            "goal": "paytm kholo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"paytm kholo\": no launch intent for net.one97.paytm (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2580,
+            "stepCount": 3
+        },
+        {
+            "goal": "is mahine kitna kharch hua dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Something went wrong: gesture callback never fired within 5000ms",
+            "latencyMs": 17450,
+            "stepCount": 14
+        },
+        {
+            "goal": "check credit card statement",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"check credit card statement\": no launch intent for com.google.android.gms (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 1663,
+            "stepCount": 3
+        },
+        {
+            "goal": "wallet balance dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "AION couldn't complete \"wallet balance dikhao\": no launch intent for com.google.android.gms (E5_PERMISSION_BLOCKED)",
+            "latencyMs": 2117,
+            "stepCount": 3
+        }
+    ]
+}
