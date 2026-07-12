@@ -99,22 +99,34 @@ class ReflectorAgentTest {
         }
 
     @Test
-    fun `unrecoverable cause aborts with an honest explanation`() =
+    fun `unrecoverable cause aborts with a natural explanation, never a raw error code`() =
         runTest {
             val s = AgentState(goal = "send the report", failures = listOf("Shizuku permission denied"))
 
             val result = ReflectorAgent().step(s)
 
             assertTrue(result.done)
-            assertTrue(result.response!!.contains("send the report"))
-            assertTrue(result.response!!.contains("E5_PERMISSION_BLOCKED"))
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = false), result.response)
+            assertFalse(result.response!!.contains("E5_PERMISSION_BLOCKED"))
+            assertFalse(result.response!!.contains("Shizuku"))
         }
 
     @Test
-    fun `no failures to reflect on ends the run rather than looping`() =
+    fun `an unrecoverable abort for a Hinglish goal replies in Hinglish`() =
+        runTest {
+            val s = AgentState(goal = "WhatsApp khol ke naya message bhejo", failures = listOf("no launch intent for com.whatsapp"))
+
+            val result = ReflectorAgent().step(s)
+
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true), result.response)
+        }
+
+    @Test
+    fun `no failures to reflect on ends the run rather than looping, with a natural response`() =
         runTest {
             val result = ReflectorAgent().step(AgentState(goal = "g"))
 
             assertTrue(result.done)
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.UNKNOWN, hinglish = false), result.response)
         }
 }

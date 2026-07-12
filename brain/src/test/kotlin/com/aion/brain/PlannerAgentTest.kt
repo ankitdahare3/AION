@@ -177,6 +177,12 @@ class PlannerAgentTest {
             assertTrue(result.done)
             assertTrue(result.plan.isEmpty())
             assertTrue(result.failures.any { it.contains("planner") })
+            // A user-facing response must exist even here — AionGraph's frozen run() loop exits the
+            // instant done=true is set, so ResponderAgent never gets a turn to fill this in itself.
+            assertEquals(
+                ResponsePhrasing.forFailure(FailureCause.E4_MODEL_PLAN_ERROR, hinglish = false),
+                result.response,
+            )
         }
 
     // T-121 finding — real models routinely ignore "no markdown fences" anyway.

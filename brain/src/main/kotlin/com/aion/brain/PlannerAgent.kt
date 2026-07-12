@@ -30,7 +30,15 @@ class PlannerAgent(
         return if (steps != null) {
             s.copy(plan = steps)
         } else {
-            s.copy(done = true, failures = s.failures + "planner: failed to produce a valid JSON plan after retry")
+            // Sets done=true directly here (same as ReflectorAgent's own abort branch), which per
+            // AionGraph's frozen run() loop means ResponderAgent never gets a turn — so this must
+            // author its own natural-language response too, or the graph would end with `response`
+            // still null (confirmed by an earlier real benchmark run, T-121/BACKLOG.md).
+            s.copy(
+                done = true,
+                failures = s.failures + "planner: failed to produce a valid JSON plan after retry",
+                response = ResponsePhrasing.forFailure(FailureCause.E4_MODEL_PLAN_ERROR, ResponsePhrasing.isHinglish(s.goal)),
+            )
         }
     }
 

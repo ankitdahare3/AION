@@ -2,6 +2,8 @@ package com.aion.brain
 
 import com.aion.brain.plugins.UIAutomationPlugin
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -135,7 +137,8 @@ class RecoveryDrillTest {
                 val graph = assembleGraph(FlakyOnceExecutor(failureMessage))
                 val result = graph.run(AgentState(goal = "wifi on karo"))
 
-                val didRecover = result.done && result.failures.isEmpty() && result.response?.startsWith("Done") == true
+                val didRecover =
+                    result.done && result.failures.isEmpty() && result.response == ResponsePhrasing.forSuccess(hinglish = true)
                 outcomes += failureMessage to didRecover
                 if (didRecover) recovered++
             }
@@ -156,6 +159,7 @@ class RecoveryDrillTest {
             val result = graph.run(AgentState(goal = "wifi on karo"))
 
             assertTrue(result.done)
-            assertTrue(result.response!!.contains("wifi on karo"))
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true), result.response)
+            assertFalse(result.response!!.contains("accessibility service"))
         }
 }

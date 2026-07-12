@@ -89,3 +89,36 @@
   natural next step and should directly improve this bucket once built. (3) 4/50 are the
   already-known `gesture callback never fired within 5000ms` (`ActionDispatcher`'s own documented
   emulator-reliability gap, T-041).
+
+- **`AionGraphFactory`'s route closure has a stale `lastFailureCount` bug** — found while tracing
+  the graph's actual flow for T-115 (ResponderAgent natural-language replies). `lastFailureCount`
+  is a `var` captured once per `create()` call and only ever updated inside the
+  `"executor" -> s.failures.size > lastFailureCount` branch; `ReflectorAgent`'s own recoverable-cause
+  branch resets `s.failures` to `emptyList()` on every retry, but nothing resets `lastFailureCount`
+  back down to match. Effect: the FIRST failure for a goal is correctly detected as new (`failures.size`
+  1 > `lastFailureCount` 0) and routes to `ReflectorAgent` for a possible retry; if the SAME failure
+  happens again after the retry, `failures.size` is back to 1 (list was cleared, then one new entry
+  added) — which is NOT greater than the already-recorded `lastFailureCount` (1) — so the "new
+  failure" check silently fails and the run falls through to whatever `currentStep >= plan.size`
+  says instead, which for a short plan is often `"responder"` directly, skipping `ReflectorAgent`'s
+  classification entirely on the SECOND occurrence of the exact same recoverable failure. This is
+  real, reproducible in the T-121 benchmark data (e.g. "wifi on karo" ending at `stepCount: 16`,
+  well under the 30-step circuit breaker, with the raw `"could not resolve element: Wi-Fi toggle"`
+  text landing straight in `ResponderAgent`'s failures-branch) — not fixed as part of T-115 because
+  it's a retry-count/recovery-correctness bug, not a response-tone bug, and T-115's `ResponsePhrasing`
+  fix already makes BOTH the reflector-routed and responder-routed outcomes equally natural/safe to
+  show a user. Whoever picks this up: `lastFailureCount` needs to track total failures ever seen
+  (e.g. increment a separate counter in `ReflectorAgent`'s branches, or compare against a running
+  total instead of the post-clear list size) so every recoverable failure gets its intended retry
+  attempt, not just the first one per goal.
+
+- **`ExecutorAgent`'s empty-plan "plan complete" branch is dead code today, but would leak an
+  unnaturalized string if ever reached** — found alongside T-115. `s.plan.getOrNull(s.currentStep)
+  ?: return s.copy(done = true, response = s.response ?: "plan complete")` only fires when
+  `ExecutorAgent` is entered with `currentStep >= plan.size` from the very start, which requires an
+  empty plan — `PlannerAgent`'s own successful-parse path always returns a non-empty plan
+  (`.takeIf { it.isNotEmpty() }`), so this is unreachable via any real call path today. Not fixed in
+  T-115 (out of scope, and touching genuinely-dead code isn't worth the risk) — but if `PlannerAgent`
+  or `AgentState`'s construction ever changes to allow an empty plan, this branch needs the same
+  `ResponsePhrasing` treatment the other three call sites got, or a raw "plan complete" string would
+  reach the user unnaturalized.

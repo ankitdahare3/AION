@@ -15,15 +15,27 @@ enum class FailureCause {
  * DOC-004 §5 / DOC-007 §2 — ReflectorAgent v0: classify the latest failure via a keyword heuristic
  * (grounded in this codebase's own real error strings — ActionDispatcher, StepVerifier,
  * DispatcherActionExecutor, PlannerAgent, ShizukuBridge), then either clear the plan for a fresh
- * replan attempt (recoverable causes) or abort with an honest explanation (unrecoverable/unknown).
- * Full DOC-007 scope — ElementMap patches, planner few-shot bank, provider re-scoring — is EPIC 8
- * (T-080+), not this. AionGraph's own `maxSteps` circuit breaker already bounds retry loops, so
- * this doesn't need its own retry counter.
+ * replan attempt (recoverable causes) or abort with an honest, natural-language explanation
+ * (unrecoverable/unknown) — phrased via [ResponsePhrasing], never as a raw error string or a
+ * `(${cause.name})`-style code. This — not [ResponderAgent] — is the one that actually authors most
+ * abort messages: `AionGraph`'s frozen `run()` loop is `while (node != END && !s.done)`, checked
+ * BEFORE each node runs, so the instant this sets `done = true` the loop exits and returns
+ * immediately — `route()`'s own "reflector -> responder" edge is computed but never taken, and
+ * ResponderAgent never gets a turn. Verified by tracing `run()` directly rather than assumed;
+ * routing the abort case through Responder first isn't possible without changing that loop, which
+ * lives in the frozen `AionGraph.kt` (CLAUDE.md: no signature/behavior changes there without an
+ * ADR). Full DOC-007 scope — ElementMap patches, planner few-shot bank, provider re-scoring — is
+ * EPIC 8 (T-080+), not this. AionGraph's own `maxSteps` circuit breaker already bounds retry loops,
+ * so this doesn't need its own retry counter.
  */
 class ReflectorAgent : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val latest =
-            s.failures.lastOrNull() ?: return s.copy(done = true, response = s.response ?: "nothing to reflect on")
+            s.failures.lastOrNull()
+                ?: return s.copy(
+                    done = true,
+                    response = s.response ?: ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
+                )
         val cause = classify(latest)
         return if (cause in RECOVERABLE) {
             // Clearing failures too, not just plan/currentStep: a fresh replan attempt should start
@@ -31,7 +43,7 @@ class ReflectorAgent : Agent {
             // because of a stale failure message from the attempt being retried (T-082 recovery drill).
             s.copy(plan = emptyList(), currentStep = 0, done = false, failures = emptyList())
         } else {
-            s.copy(done = true, response = "AION couldn't complete \"${s.goal}\": $latest (${cause.name})")
+            s.copy(done = true, response = ResponsePhrasing.forFailure(cause, ResponsePhrasing.isHinglish(s.goal)))
         }
     }
 
