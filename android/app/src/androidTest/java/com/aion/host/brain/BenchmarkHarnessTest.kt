@@ -7,6 +7,7 @@ import com.aion.brain.BENCHMARK_TASKS
 import com.aion.brain.BenchmarkCategory
 import com.aion.brain.BenchmarkTask
 import com.aion.brain.ProviderRouter
+import com.aion.brain.ResponsePhrasing
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
@@ -163,18 +164,23 @@ class BenchmarkHarnessTest {
                 )
             }
         val latency = System.currentTimeMillis() - t0
-        // Three real bugs found across the first runs: (1) response?.startsWith(...) != true is
-        // ALSO true when response is null, counting "planner failed both attempts" as success; (2)
-        // any prefix-matching on response strings misses ReflectorAgent's own unrecoverable-abort
-        // response ("AION couldn't complete ..."), which run 3 produced 50 times and the check
-        // counted as 50 passes; (3) run 4 showed 4/13 "passes" were actually uncaught exceptions
-        // (e.g. a11y screenshot-capability errors) — the catch block above built a fresh AgentState
-        // with a DEFAULT EMPTY failures list, so `final.failures.isEmpty()` was trivially true for
-        // a real crash. Now the catch path records the exception as a failure too. The honest,
-        // format-independent check: the run finished, produced a real response, and ended with a
-        // clean failures list (T-082's reflector fix guarantees a successfully-recovered run clears
-        // its stale failures, so this doesn't punish recovery).
-        val success = final.done && final.response != null && final.failures.isEmpty()
+        // FOUR real bugs found across the runs so far, each hiding in the success check itself,
+        // not the agents: (1) response?.startsWith(...) != true is ALSO true when response is
+        // null, counting "planner failed both attempts" as success; (2) prefix-matching on
+        // response strings missed ReflectorAgent's own unrecoverable-abort response, counted as
+        // 50 passes in one run; (3) the catch block below built a fresh AgentState with a DEFAULT
+        // EMPTY failures list, so `failures.isEmpty()` was trivially true for a real uncaught
+        // exception; (4) — found after T-115 gave every failure path a natural-language response
+        // — `failures.isEmpty()` stopped being a reliable failure signal at all: ReflectorAgent's
+        // "no failures to reflect on" branch (the maxSteps-stuck case) is BY DEFINITION reached
+        // with an empty `failures` list, and post-T-115 it ALSO returns a real natural response
+        // ("Sorry, that didn't work out...") — so a run that got stuck and gave up satisfied both
+        // `response != null` and `failures.isEmpty()` and was counted a pass. `ResponsePhrasing`'s
+        // output is a small, known, enumerable set — checking for an EXACT match against its own
+        // success string is a direct, format-independent signal instead of inferring success from
+        // the absence of a failure list, which this run proved isn't the same thing anymore.
+        val hinglish = ResponsePhrasing.isHinglish(task.goal)
+        val success = final.done && final.response == ResponsePhrasing.forSuccess(hinglish)
         return BenchmarkTaskResult(
             goal = task.goal,
             category = task.category.name,

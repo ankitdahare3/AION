@@ -30,7 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
+import com.aion.brain.ProviderRouter
+import com.aion.host.brain.AionGraphFactory
+import com.aion.host.brain.BuiltInPluginRegistry
+import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
+import com.aion.host.brain.RealApprovalGate
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
@@ -42,7 +47,7 @@ import com.aion.host.setup.SetupWizardScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { SETUP, AUDIT_LOG, API_KEYS }
+private enum class Screen { SETUP, AUDIT_LOG, API_KEYS, CHAT }
 
 /** DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen. */
 @AndroidEntryPoint
@@ -56,6 +61,18 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var secretVault: SecretVault
 
+    @Inject
+    lateinit var graphFactory: AionGraphFactory
+
+    @Inject
+    lateinit var providerRouter: ProviderRouter
+
+    @Inject
+    lateinit var pluginRegistry: BuiltInPluginRegistry
+
+    @Inject
+    lateinit var realApprovalGate: RealApprovalGate
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +85,18 @@ class MainActivity : ComponentActivity() {
         // which is exactly why it never showed up until now. The app never used the title bar for
         // anything, so hiding it outright is the fix, not working around it with inset padding.
         actionBar?.hide()
-        setContent { AionApp(resumeTrigger, auditLogger, approvalGateService, secretVault) }
+        setContent {
+            AionApp(
+                resumeTrigger,
+                auditLogger,
+                approvalGateService,
+                secretVault,
+                graphFactory,
+                providerRouter,
+                pluginRegistry,
+                realApprovalGate,
+            )
+        }
     }
 
     override fun onResume() {
@@ -83,6 +111,10 @@ private fun AionApp(
     auditLogger: AuditLogger,
     approvalGateService: ApprovalGateService,
     secretVault: SecretVault,
+    graphFactory: AionGraphFactory,
+    providerRouter: ProviderRouter,
+    pluginRegistry: BuiltInPluginRegistry,
+    realApprovalGate: RealApprovalGate,
 ) {
     var screen by remember { mutableStateOf(Screen.SETUP) }
     var overlayRunning by remember { mutableStateOf(false) }
@@ -139,11 +171,24 @@ private fun AionApp(
                         }) {
                             Text("Explore Device")
                         }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.CHAT) Screen.SETUP else Screen.CHAT
+                        }) {
+                            Text(if (screen == Screen.CHAT) "Back to Setup" else "Talk to AION")
+                        }
                     }
                     when (screen) {
                         Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
                         Screen.API_KEYS -> SecretsScreen(secretVault, auditLogger, modifier = Modifier.weight(1f))
                         Screen.SETUP -> SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
+                        Screen.CHAT ->
+                            ChatScreen(
+                                graphFactory,
+                                providerRouter,
+                                pluginRegistry.manager,
+                                realApprovalGate,
+                                modifier = Modifier.weight(1f),
+                            )
                     }
                 }
                 // SR-01/02 — sits above everything else; shows itself only when a side-effect
