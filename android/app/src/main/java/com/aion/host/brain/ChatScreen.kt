@@ -2,6 +2,7 @@ package com.aion.host.brain
 
 import android.content.Intent
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -17,7 +18,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +34,8 @@ import com.aion.brain.AgentState
 import com.aion.brain.ApprovalGate
 import com.aion.brain.PluginManager
 import com.aion.brain.ProviderRouter
+import com.aion.brain.ResponsePhrasing
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 /**
@@ -48,6 +54,13 @@ import kotlinx.coroutines.launch
  * matching how every other bilingual surface in this app (ResponsePhrasing) detects rather than
  * dictates language. Gracefully degrades (no crash) if no recognizer app is present, same pattern as
  * ShizukuBridge's "not available" path.
+ *
+ * T-136 (ADR-011a) — replies are read aloud via the platform's own [TextToSpeech], the same
+ * stepping-stone scope as T-135's mic button (no custom audio pipeline). Language is picked via
+ * [ResponsePhrasing.isHinglish] against the goal that was actually submitted — the same detection
+ * this app already uses to decide which of ResponsePhrasing's own strings to show, so speech and
+ * text always agree on language. A mute toggle silences it without touching the graph/response at
+ * all, matching this screen's own "build the mechanism, don't gate the underlying feature" pattern.
  */
 @Composable
 fun ChatScreen(
@@ -58,8 +71,10 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
 ) {
     var goal by remember { mutableStateOf("") }
+    var submittedGoal by remember { mutableStateOf("") }
     var response by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
+    var muted by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -71,6 +86,21 @@ fun ChatScreen(
                     ?.firstOrNull()
             if (!heard.isNullOrBlank()) goal = heard
         }
+
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    DisposableEffect(Unit) {
+        val engine = TextToSpeech(context) { }
+        tts = engine
+        onDispose { engine.shutdown() }
+    }
+    LaunchedEffect(response, muted) {
+        val text = response
+        val engine = tts
+        if (!muted && text != null && engine != null) {
+            engine.language = if (ResponsePhrasing.isHinglish(submittedGoal)) Locale("hi", "IN") else Locale.US
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text("Talk to AION", style = MaterialTheme.typography.headlineSmall)
@@ -84,6 +114,7 @@ fun ChatScreen(
         Row(modifier = Modifier.padding(top = 12.dp)) {
             Button(
                 onClick = {
+                    submittedGoal = goal
                     running = true
                     response = null
                     scope.launch {
@@ -114,6 +145,10 @@ fun ChatScreen(
                 enabled = !running,
             ) {
                 Text("🎤")
+            }
+            Spacer(Modifier.width(8.dp))
+            TextButton(onClick = { muted = !muted }) {
+                Text(if (muted) "🔇 Muted" else "🔊 Speak replies")
             }
         }
         response?.let {
