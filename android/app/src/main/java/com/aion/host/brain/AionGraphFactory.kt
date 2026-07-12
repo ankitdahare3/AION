@@ -42,9 +42,8 @@ class AionGraphFactory
             router: ProviderRouter,
             pluginManager: PluginManager,
             approval: ApprovalGate,
-        ): AionGraph {
-            var lastFailureCount = 0
-            return AionGraph(
+        ): AionGraph =
+            AionGraph(
                 nodes =
                     mapOf(
                         "planner" to PlannerAgent(router, memoryStore = memoryStore),
@@ -57,11 +56,17 @@ class AionGraphFactory
                     when (node) {
                         "planner" -> "executor"
                         "executor" ->
+                            // No stateful counter needed: ReflectorAgent always clears s.failures
+                            // back to emptyList() before any retry (its own KDoc), and ExecutorAgent
+                            // only ever appends to it on the exact call that just failed — so a
+                            // non-empty list here always means a fresh failure to hand off, whether
+                            // it's the first one for this goal or a recurrence of the same one.
+                            // A prior version tracked `lastFailureCount` against the post-clear list
+                            // SIZE, which broke on the second occurrence of an identical recoverable
+                            // failure (size goes 0->1 again, never exceeding the stale watermark) —
+                            // found via T-121's real benchmark data (BACKLOG.md).
                             when {
-                                s.failures.size > lastFailureCount -> {
-                                    lastFailureCount = s.failures.size
-                                    "reflector"
-                                }
+                                s.failures.isNotEmpty() -> "reflector"
                                 s.currentStep >= s.plan.size -> "responder"
                                 else -> "executor"
                             }
@@ -73,5 +78,4 @@ class AionGraphFactory
                 approval = approval,
                 checkpoints = checkpointer,
             )
-        }
     }

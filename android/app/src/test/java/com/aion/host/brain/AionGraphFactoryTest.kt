@@ -14,6 +14,7 @@ import com.aion.brain.Provider
 import com.aion.brain.ProviderCaps
 import com.aion.brain.ProviderFailure
 import com.aion.brain.ProviderRouter
+import com.aion.brain.ResponsePhrasing
 import com.aion.brain.ScoreStore
 import com.aion.brain.TaskType
 import com.aion.brain.Tier
@@ -169,5 +170,45 @@ class AionGraphFactoryTest {
             assertEquals(emptyList<String>(), executed)
             assertTrue(result.done)
             assertTrue(result.failures.any { it.contains("denied") })
+        }
+
+    @Test
+    fun `T-133 - the same recoverable failure recurring gets a reflector retry every time, not just the first`() =
+        runTest {
+            val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+            val approvalGate = RealApprovalGate(ApprovalGateService(AuditLogger(FakeAuditDao())))
+
+            val planJson =
+                """[{"action":"tap","target":"Wi-Fi toggle","expected":"Wi-Fi on","sideEffect":false}]"""
+            val router = ProviderRouter(listOf(scriptedProvider(planJson)), noopScoreStore, alwaysCanSpend)
+
+            // Fails with the exact same E1_WRONG_ELEMENT-classifiable message twice in a row, then
+            // succeeds on the third attempt. Under the old lastFailureCount-vs-list-size bug, the
+            // SECOND occurrence would never re-trigger ReflectorAgent (failures.size resets to 1
+            // both times, never exceeding the stale watermark left by the first retry) — the graph
+            // would fall through to "responder" after only 2 calls, with a raw unresolved failure,
+            // and the 3rd (successful) attempt would never happen.
+            var callCount = 0
+            val executor =
+                ActionExecutor { step: PlanStep ->
+                    callCount++
+                    if (callCount <= 2) {
+                        ExecutionOutcome(success = false, observation = "", error = "could not resolve element: Wi-Fi toggle")
+                    } else {
+                        ExecutionOutcome(success = true, observation = "ok:${step.action}")
+                    }
+                }
+
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
+
+            val result = graph.run(com.aion.brain.AgentState(goal = "turn on wifi"))
+            testScheduler.advanceUntilIdle()
+
+            assertEquals("expected 2 failing attempts + 1 successful retry", 3, callCount)
+            assertTrue(result.done)
+            assertEquals(ResponsePhrasing.forSuccess(hinglish = false), result.response)
         }
 }
