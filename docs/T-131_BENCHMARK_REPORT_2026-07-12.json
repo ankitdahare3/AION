@@ -1,0 +1,415 @@
+{
+    "totalTasks": 50,
+    "successCount": 12,
+    "successRate": 0.24,
+    "byCategory": {
+        "MESSAGING": 0.5,
+        "SETTINGS": 0.1111111111111111,
+        "CALENDAR": 0.375,
+        "MAPS": 0.125,
+        "MEDIA": 0.3333333333333333,
+        "FINANCE_READONLY": 0.0
+    },
+    "results": [
+        {
+            "goal": "send a message to Ravi saying running late",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 9091,
+            "stepCount": 0
+        },
+        {
+            "goal": "WhatsApp khol ke naya message bhejo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 2845,
+            "stepCount": 3
+        },
+        {
+            "goal": "reply to the last message saying ok",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "I got a bit confused figuring out how to do that. Could you say it a little differently?",
+            "latencyMs": 24038,
+            "stepCount": 1
+        },
+        {
+            "goal": "messages app kholo",
+            "category": "MESSAGING",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 3351,
+            "stepCount": 4
+        },
+        {
+            "goal": "unread messages check karo",
+            "category": "MESSAGING",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 8210,
+            "stepCount": 14
+        },
+        {
+            "goal": "mummy ko call karo",
+            "category": "MESSAGING",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2382,
+            "stepCount": 4
+        },
+        {
+            "goal": "dialer kholo",
+            "category": "MESSAGING",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 1791,
+            "stepCount": 3
+        },
+        {
+            "goal": "missed calls check karo",
+            "category": "MESSAGING",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2300,
+            "stepCount": 3
+        },
+        {
+            "goal": "wifi on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 10837,
+            "stepCount": 15
+        },
+        {
+            "goal": "bluetooth band karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 13181,
+            "stepCount": 21
+        },
+        {
+            "goal": "dark mode on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 63068,
+            "stepCount": 30
+        },
+        {
+            "goal": "battery percentage batao",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Ye time par complete nahi hua. Ek baar aur try karte hain.",
+            "latencyMs": 29445,
+            "stepCount": 14
+        },
+        {
+            "goal": "screen brightness settings kholo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 24788,
+            "stepCount": 14
+        },
+        {
+            "goal": "storage space check karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Ye time par complete nahi hua. Ek baar aur try karte hain.",
+            "latencyMs": 35801,
+            "stepCount": 14
+        },
+        {
+            "goal": "notification settings kholo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Ye time par complete nahi hua. Ek baar aur try karte hain.",
+            "latencyMs": 17916,
+            "stepCount": 8
+        },
+        {
+            "goal": "airplane mode on karo",
+            "category": "SETTINGS",
+            "success": false,
+            "response": "Ye time par complete nahi hua. Ek baar aur try karte hain.",
+            "latencyMs": 15770,
+            "stepCount": 22
+        },
+        {
+            "goal": "settings kholo",
+            "category": "SETTINGS",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2274,
+            "stepCount": 3
+        },
+        {
+            "goal": "calendar app kholo",
+            "category": "CALENDAR",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2072,
+            "stepCount": 3
+        },
+        {
+            "goal": "aaj ke events dikhao",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 2243,
+            "stepCount": 3
+        },
+        {
+            "goal": "kal ka schedule check karo",
+            "category": "CALENDAR",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2408,
+            "stepCount": 3
+        },
+        {
+            "goal": "add a new event tomorrow at 5pm called meeting",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Sorry, that didn't work out and I'm not fully sure why yet. Want to try again?",
+            "latencyMs": 24382,
+            "stepCount": 32
+        },
+        {
+            "goal": "next week ka calendar dekho",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 1466,
+            "stepCount": 3
+        },
+        {
+            "goal": "set a reminder for the doctor appointment",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "I can't do that yet — looks like that app isn't set up or installed on this device.",
+            "latencyMs": 2115,
+            "stepCount": 3
+        },
+        {
+            "goal": "is week ke events count karo",
+            "category": "CALENDAR",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 15997,
+            "stepCount": 18
+        },
+        {
+            "goal": "calendar mein aaj jao",
+            "category": "CALENDAR",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2161,
+            "stepCount": 3
+        },
+        {
+            "goal": "google maps kholo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 2189,
+            "stepCount": 4
+        },
+        {
+            "goal": "current location check karo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 39203,
+            "stepCount": 23
+        },
+        {
+            "goal": "search for nearest coffee shop",
+            "category": "MAPS",
+            "success": false,
+            "response": "Hmm, I couldn't find the right thing to tap on-screen for that. Want to try again?",
+            "latencyMs": 34411,
+            "stepCount": 22
+        },
+        {
+            "goal": "traffic check karo maps mein",
+            "category": "MAPS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 15553,
+            "stepCount": 8
+        },
+        {
+            "goal": "navigate home",
+            "category": "MAPS",
+            "success": true,
+            "response": "Done! That's taken care of.",
+            "latencyMs": 1567,
+            "stepCount": 4
+        },
+        {
+            "goal": "distance to office check karo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 49666,
+            "stepCount": 0
+        },
+        {
+            "goal": "maps mein saved places dekho",
+            "category": "MAPS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 13493,
+            "stepCount": 12
+        },
+        {
+            "goal": "nearby petrol pump dhundo",
+            "category": "MAPS",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 29263,
+            "stepCount": 20
+        },
+        {
+            "goal": "youtube kholo",
+            "category": "MEDIA",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 38237,
+            "stepCount": 3
+        },
+        {
+            "goal": "music play karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Ye time par complete nahi hua. Ek baar aur try karte hain.",
+            "latencyMs": 19464,
+            "stepCount": 16
+        },
+        {
+            "goal": "gallery kholo",
+            "category": "MEDIA",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 4557,
+            "stepCount": 8
+        },
+        {
+            "goal": "camera se photo lo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 16375,
+            "stepCount": 27
+        },
+        {
+            "goal": "camera kholo",
+            "category": "MEDIA",
+            "success": true,
+            "response": "Ho gaya! Kaam ho gaya.",
+            "latencyMs": 2170,
+            "stepCount": 3
+        },
+        {
+            "goal": "video pause karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 5194,
+            "stepCount": 0
+        },
+        {
+            "goal": "volume badhao",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Maaf kijiye, ye nahi ho paaya aur mujhe abhi poora pata nahi kyun. Dobara try karein?",
+            "latencyMs": 6194,
+            "stepCount": 9
+        },
+        {
+            "goal": "next song play karo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 6618,
+            "stepCount": 8
+        },
+        {
+            "goal": "lofi music youtube pe dhundo",
+            "category": "MEDIA",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 11071,
+            "stepCount": 23
+        },
+        {
+            "goal": "bank balance check karo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Maaf kijiye, ye nahi ho paaya aur mujhe abhi poora pata nahi kyun. Dobara try karein?",
+            "latencyMs": 95418,
+            "stepCount": 32
+        },
+        {
+            "goal": "google pay kholo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 2710,
+            "stepCount": 4
+        },
+        {
+            "goal": "recent transactions dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Something went wrong: Services don't have the capability of taking the screenshot.",
+            "latencyMs": 2729,
+            "stepCount": 0
+        },
+        {
+            "goal": "UPI balance check karo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 26245,
+            "stepCount": 13
+        },
+        {
+            "goal": "paytm kholo",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Ye abhi nahi ho sakta — lagta hai ye app is device par set up nahi hai ya install nahi hai.",
+            "latencyMs": 2340,
+            "stepCount": 3
+        },
+        {
+            "goal": "is mahine kitna kharch hua dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 11245,
+            "stepCount": 21
+        },
+        {
+            "goal": "check credit card statement",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Hmm, I couldn't find the right thing to tap on-screen for that. Want to try again?",
+            "latencyMs": 21051,
+            "stepCount": 20
+        },
+        {
+            "goal": "wallet balance dikhao",
+            "category": "FINANCE_READONLY",
+            "success": false,
+            "response": "Screen par sahi cheez nahi mil paayi tap karne ke liye. Ek baar phir try karein?",
+            "latencyMs": 18681,
+            "stepCount": 14
+        }
+    ]
+}
