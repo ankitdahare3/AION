@@ -196,3 +196,17 @@
   does for `AionNotificationListener`. Not fixed inline — out of scope for the task being worked on
   when found, and touching the setup wizard's own permission-status logic deserves its own
   isolated verification pass rather than a drive-by edit.
+
+- **No formal NOTICE/THIRD_PARTY_LICENSES file for bundled model assets** — found 2026-07-13
+  during T-011. `assets/models/*.onnx` (melspectrogram, embedding, alexa_v0.1, silero_vad) are
+  openWakeWord v0.5.1 release assets (Apache-2.0) and Silero VAD (MIT); the Kotlin port in
+  `voice/wakeword/` is also structurally derived from openWakeWord's own `model.py`/`utils.py`
+  (Apache-2.0). Attribution is documented in code comments/PROGRESS.md today but there's no
+  repo-root NOTICE file — the project currently has no LICENSE file at all, so this is really "add
+  one before any public release," not urgent for solo/private use.
+
+- **Wake-word/VAD thresholds are fixed constants, not owner-tunable** — found 2026-07-13 during
+  T-011. `WakeWordDetector`'s `threshold`/`vadThreshold` (both 0.5) and `VoiceForegroundService`'s
+  `WAKE_THRESHOLD`/`WAKE_DEBOUNCE_MS` are hardcoded. Fine for now (no UI surface asks for this yet,
+  and the real "AION" model from T-012 will need its own calibrated threshold anyway once trained
+  on real false-accept data) — revisit once T-012's `<1 false-accept/hr` AC needs a knob to tune.

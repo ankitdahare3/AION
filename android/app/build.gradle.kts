@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.androidx.sqlite)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.androidx.biometric)
+    implementation(libs.onnxruntime.android)
     // T-102 — GmailPlugin/TelegramPlugin (:brain) default-construct an HttpClient; that type must
     // be resolvable here even though :android:app never builds one itself.
     implementation(libs.ktor.client.core)

@@ -43,6 +43,9 @@ androidxSqlite = "2.4.0"
 mlkitTextRecognition = "16.0.1"
 # BiometricPrompt compat wrapper (T-138, DOC-017 §5 T6). 1.1.0 is the current stable release.
 biometric = "1.1.0"
+# ONNX Runtime Mobile (T-011, DOC-011 §1): ships prebuilt per-ABI native libs inside the AAR itself —
+# no NDK/native toolchain setup needed on our side. 1.27.0 is the current stable release.
+onnxruntime = "1.27.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -80,6 +83,7 @@ sqlcipher-android = { group = "net.zetetic", name = "android-database-sqlcipher"
 androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "androidxSqlite" }
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

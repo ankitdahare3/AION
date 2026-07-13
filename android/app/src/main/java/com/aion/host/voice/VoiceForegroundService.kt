@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import com.aion.host.MainActivity
 import com.aion.host.R
 import com.aion.host.security.AuditLogger
+import com.aion.host.voice.wakeword.WakeWordDetector
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,8 +44,8 @@ import javax.inject.Inject
  * opens and continuously reads the microphone (16kHz mono PCM, the standard input format both
  * openWakeWord and Silero VAD expect) rather than just declaring the service — Android's own FGS
  * policy expects a `microphone`-typed service to actually be using the microphone, and a fake
- * declaration would be dishonest. There's no wake-word model to feed yet (T-011, not built): each
- * buffer is read and discarded, marked below with the exact hookup point T-011 needs.
+ * declaration would be dishonest. Every buffer is now fed through a real [WakeWordDetector] (T-011)
+ * instead of being discarded.
  *
  * AudioFocus is requested as `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` per DOC-011 §4 — this service
  * only ever listens for now (T-014's TTS/barge-in ducking doesn't exist yet), but requesting the
@@ -72,6 +73,8 @@ class VoiceForegroundService : Service() {
     private var focusRequest: AudioFocusRequest? = null
     private var overlayView: View? = null
     private lateinit var windowManager: WindowManager
+    private var wakeWordDetector: WakeWordDetector? = null
+    private var lastWakeAuditMs = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -185,15 +188,30 @@ class VoiceForegroundService : Service() {
         }
         audioRecord = record
         record.startRecording()
+        val detector = WakeWordDetector(applicationContext)
+        wakeWordDetector = detector
         captureJob =
             scope.launch {
                 val buffer = ShortArray(minBufferSize)
-                // T-011 hookup point: openWakeWord/Silero VAD consume this exact 16kHz mono PCM
-                // stream instead of discarding it. Reading continuously (not just opening the
-                // stream) is what actually proves the mic stays genuinely held for the AC's soak
-                // test, not just that startRecording() was called once.
+                // T-011 — real openWakeWord ONNX inference on every buffer read, no more discard.
                 while (isActive) {
-                    record.read(buffer, 0, buffer.size)
+                    val read = record.read(buffer, 0, buffer.size)
+                    if (read <= 0) continue
+                    val samples = if (read == buffer.size) buffer else buffer.copyOfRange(0, read)
+                    try {
+                        val score = detector.accept(samples)
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        // VoiceSessionManager (T-015) doesn't exist yet to act on a wake event, so
+                        // the audit log is the honest sink for now (same stub-until-real-consumer
+                        // pattern as MemoryWriterAgent). Debounced so a sustained trigger doesn't
+                        // spam the log every ~80ms.
+                        if (score >= WAKE_THRESHOLD && now - lastWakeAuditMs > WAKE_DEBOUNCE_MS) {
+                            lastWakeAuditMs = now
+                            auditAsync("voicefgs.wakeword_detected")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "wake-word inference failed", e)
+                    }
                 }
             }
     }
@@ -206,6 +224,8 @@ class VoiceForegroundService : Service() {
             release()
         }
         audioRecord = null
+        wakeWordDetector?.close()
+        wakeWordDetector = null
     }
 
     override fun onDestroy() {
@@ -243,5 +263,7 @@ class VoiceForegroundService : Service() {
         const val CHANNEL_ID = "aion_voice"
         const val NOTIFICATION_ID = 1001
         const val SAMPLE_RATE_HZ = 16000
+        const val WAKE_THRESHOLD = 0.5f
+        const val WAKE_DEBOUNCE_MS = 2000L
     }
 }
