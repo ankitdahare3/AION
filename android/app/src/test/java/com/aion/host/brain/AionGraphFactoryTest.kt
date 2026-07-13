@@ -5,6 +5,7 @@ import com.aion.brain.BrainRequest
 import com.aion.brain.BrainResult
 import com.aion.brain.BudgetGuard
 import com.aion.brain.ExecutionOutcome
+import com.aion.brain.FailureCause
 import com.aion.brain.FewShotBank
 import com.aion.brain.Memory
 import com.aion.brain.MemoryStore
@@ -260,6 +261,52 @@ class AionGraphFactoryTest {
 
             assertTrue("expected the run to eventually succeed instead of exhausting maxSteps", result.done)
             assertEquals(ResponsePhrasing.forSuccess(hinglish = false), result.response)
+        }
+
+    @Test
+    fun `T-162 - a goal that never converges fails fast and honest instead of grinding to AionGraph's 30-step ceiling`() =
+        runTest {
+            val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+            val approvalGate = RealApprovalGate(ApprovalGateService(AuditLogger(FakeAuditDao())))
+
+            // A genuinely stubborn model: never proposes the right target, even once counter-examples
+            // exist (unlike the self-correcting test above). Simulates a goal FewShotBank alone can't
+            // rescue — e.g. cycling between several equally-plausible-but-wrong targets, T-162's own
+            // BACKLOG.md finding for why the live retest of T-158 still didn't converge.
+            val provider =
+                object : Provider {
+                    override val id = "never-learns"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        val text = """[{"action":"tap","target":"WRONG_ELEMENT","expected":"Wi-Fi on","sideEffect":false}]"""
+                        return BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
+                    }
+                }
+            val router = ProviderRouter(listOf(provider), noopScoreStore, alwaysCanSpend)
+
+            var executorCalls = 0
+            val executor =
+                ActionExecutor { step: PlanStep ->
+                    executorCalls++
+                    ExecutionOutcome(success = false, observation = "", error = "could not resolve element: ${step.target}")
+                }
+
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
+
+            val result = graph.run(com.aion.brain.AgentState(goal = "turn on wifi, a goal that never converges"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue("expected an honest abort, not a hang or a fabricated success", result.done)
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.UNKNOWN, hinglish = false), result.response)
+            assertTrue(
+                "expected the retry ceiling (default 5) to stop this well short of AionGraph's own " +
+                    "30-step/~10-cycle hard ceiling — got $executorCalls executor calls",
+                executorCalls <= 6,
+            )
         }
 
     @Test

@@ -25,8 +25,7 @@ enum class FailureCause {
  * routing the abort case through Responder first isn't possible without changing that loop, which
  * lives in the frozen `AionGraph.kt` (CLAUDE.md: no signature/behavior changes there without an
  * ADR). Full DOC-007 scope — ElementMap patches, provider re-scoring — is EPIC 8 (T-080+), not
- * this. AionGraph's own `maxSteps` circuit breaker already bounds retry loops, so this doesn't need
- * its own retry counter.
+ * this.
  *
  * [fewShotBank] (T-081/T-090, optional — same "wired only where a real caller exists" pattern as
  * `PlannerAgent`'s own optional dependencies) — found 2026-07-13 during T-158's live 30-step-loop
@@ -36,10 +35,23 @@ enum class FailureCause {
  * a real, plausible root cause for goals that loop without ever converging: nothing ever told the
  * planner "don't repeat that." Recording a [CounterExample] here, right before clearing state for a
  * fresh replan, is what makes T-081's whole mechanism actually reachable during a live run.
+ *
+ * [maxRecoverableRetries] (T-162, BACKLOG.md angle 2) — wiring [fewShotBank] in (above) genuinely
+ * helps but doesn't fully close the loop: a live re-test of T-158's exact scenario still didn't
+ * converge. `AionGraph`'s own `maxSteps=30` DOES already bound every run, but each planner→
+ * executor→reflector cycle costs 3 `stepCount` and is dominated by a real ~60-90s LLM call, so a
+ * genuinely stuck goal can grind for ~10-15 minutes before that hard ceiling even fires — a real
+ * latency problem independent of whether it ever converges. This instance-scoped counter (one
+ * `ReflectorAgent` belongs to exactly one graph run, same assumption `ExecutorAgent`'s own
+ * `pendingApprovalForStep` already makes) fails fast and honest well before the hard ceiling,
+ * instead of silently waiting for it.
  */
 class ReflectorAgent(
     private val fewShotBank: FewShotBank? = null,
+    private val maxRecoverableRetries: Int = 5,
 ) : Agent {
+    private var recoverableRetryCount = 0
+
     override suspend fun step(s: AgentState): AgentState {
         val latest =
             s.failures.lastOrNull()
@@ -48,15 +60,21 @@ class ReflectorAgent(
                     response = s.response ?: ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
                 )
         val cause = classify(latest)
-        return if (cause in RECOVERABLE) {
-            fewShotBank?.add(CounterExample(goal = s.goal, badPlanJson = s.plan.toString(), reason = latest))
-            // Clearing failures too, not just plan/currentStep: a fresh replan attempt should start
-            // clean, so a subsequent success isn't misreported by ResponderAgent as still-failed
-            // because of a stale failure message from the attempt being retried (T-082 recovery drill).
-            s.copy(plan = emptyList(), currentStep = 0, done = false, failures = emptyList())
-        } else {
-            s.copy(done = true, response = ResponsePhrasing.forFailure(cause, ResponsePhrasing.isHinglish(s.goal)))
+        if (cause !in RECOVERABLE) {
+            return s.copy(done = true, response = ResponsePhrasing.forFailure(cause, ResponsePhrasing.isHinglish(s.goal)))
         }
+        recoverableRetryCount++
+        if (recoverableRetryCount > maxRecoverableRetries) {
+            return s.copy(
+                done = true,
+                response = ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
+            )
+        }
+        fewShotBank?.add(CounterExample(goal = s.goal, badPlanJson = s.plan.toString(), reason = latest))
+        // Clearing failures too, not just plan/currentStep: a fresh replan attempt should start
+        // clean, so a subsequent success isn't misreported by ResponderAgent as still-failed
+        // because of a stale failure message from the attempt being retried (T-082 recovery drill).
+        return s.copy(plan = emptyList(), currentStep = 0, done = false, failures = emptyList())
     }
 
     companion object {

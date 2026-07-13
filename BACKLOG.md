@@ -193,6 +193,18 @@
   amount of few-shot learning would help) — would need real instrumentation/logging to confirm,
   not assumed here.
 
+  **Update 2026-07-13 (T-163) — option (b) above, implemented and live-confirmed**: added a
+  per-goal recoverable-retry ceiling to `ReflectorAgent` (5 retries, instance-scoped — one
+  `ReflectorAgent` per real graph run). Re-ran T-158's exact original stuck scenario a THIRD time,
+  live, on a freshly restarted emulator: this time it resolved with an honest "I don't know why,
+  try again" response in under 75 seconds — the two prior live attempts (T-158, T-162) never
+  resolved at all after 10-15+ minutes each. For this specific, three-times-reproduced scenario,
+  the loop is genuinely closed. Not claiming the whole phenomenon is closed, though: option (a)
+  (accumulating multiple mistakes per goal in `FewShotBank`) is still undone and may matter for
+  goals that fail in more varied ways than this one did, and the `StepVerifier`-false-positive
+  question two paragraphs up is still open and unconfirmed either way. Both remain real, scoped
+  follow-ups for whoever hits a goal this fix doesn't fully resolve.
+
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
   declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup

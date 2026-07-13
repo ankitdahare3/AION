@@ -99,6 +99,29 @@ class ReflectorAgentTest {
         }
 
     @Test
+    fun `T-162 - a recoverable failure that keeps recurring past the retry ceiling aborts honestly instead of looping forever`() =
+        runTest {
+            val agent = ReflectorAgent(maxRecoverableRetries = 3)
+            val failing =
+                AgentState(
+                    goal = "stubborn goal",
+                    plan = listOf(PlanStep("tap", "x", "y", false)),
+                    currentStep = 1,
+                    failures = listOf("element not found on current screen"),
+                )
+
+            val attempts = (1..3).map { agent.step(failing) }
+            attempts.forEach { result ->
+                assertFalse("attempts within the ceiling should still retry, not abort", result.done)
+            }
+
+            val overCeiling = agent.step(failing)
+
+            assertTrue("the 4th recurrence of the same failure should abort rather than retry a 4th time", overCeiling.done)
+            assertEquals(ResponsePhrasing.forFailure(FailureCause.UNKNOWN, hinglish = false), overCeiling.response)
+        }
+
+    @Test
     fun `unrecoverable cause aborts with a natural explanation, never a raw error code`() =
         runTest {
             val s = AgentState(goal = "send the report", failures = listOf("Shizuku permission denied"))
