@@ -13,6 +13,17 @@
   a native-build wall on this dev machine, owner's explicit call on 2026-07-09. Once T-032 lands,
   swap the implementation behind the same `classify(utterance: String): Intent` shape.
 
+  **Update 2026-07-13 — concrete, quantified evidence this matters, not just theoretical**: a real
+  50-task benchmark re-run on the owner's real phone (T-121 re-run) found 24/50 goals (48%) fell
+  through to `Intent.CHAT` purely because their only verb wasn't in `actionVerbs` — diverting a
+  real device-read/action goal to `ChatAgent`, which fabricated a plausible-sounding answer instead
+  of ever attempting the real automation path. T-166 patched the 5 most common missing verbs
+  (`check karo`/`dikhao`/`batao`/`band karo`/`badhao`, fixing 14/24 by hand-verification), but 10
+  phrases still fall through using verbs that fix doesn't cover (English "reply to X saying Y",
+  "search for X", "navigate home"; Hindi "dekho", "jao", "count karo", "lo", "pause karo") — this
+  class of bug will keep recurring with new phrasings no matter how many individual words get
+  patched, which is exactly the argument for the real fix named above, not another word-list PR.
+
 - **Expand `ContextBuilder` (T-034) to the full DOC-004 §4 spec**: user-profile summary (≤300 tok),
   vector-recalled memories (top-k=5), compressed a11y tree (≤2000 tok), and tool schemas. v1 only
   covers the persona+safety immutable prefix + last N=6 turns, because Memory (T-06x), the a11y
@@ -279,3 +290,21 @@
   `am force-stop`) all silently no-op'd. 3 fake test SMS (Amazon/Swiggy/Salary, harmless amounts)
   are left sitting on this AVD as a result — expect them present in any future SMS query on
   `emulator-5554` until someone finds the right cleanup incantation or the AVD gets recreated.
+
+- **Real-automation success rate regressed too, separately from the CHAT-diversion issue —
+  not yet diagnosed** — found 2026-07-13 during the T-121 real-device re-run. Of the 50 benchmark
+  goals, 26 genuinely reached `PlannerAgent`/`ExecutorAgent` (not diverted to `ChatAgent`) and ALL
+  26 failed — 0% on real automation, worse than this exact same real device's own prior run
+  (T-134, 2026-07-12: 16/50 successes, i.e. real automation used to work some of the time on this
+  device). The CHAT-diversion fix (T-166) explains the OTHER 24 goals turning into fabricated
+  chat replies, but doesn't explain why the 26 that DID reach real automation also all failed where
+  16-ish would have succeeded before. Candidate explanations, none confirmed: (1) real device state
+  drift since 2026-07-12 — different real apps installed/uninstalled, different real screen
+  layouts after an OS/app update, in the ~24h between runs; (2) an unintended regression from one
+  of this session's several `DispatcherActionExecutor`/`StepVerifier`/`ReflectorAgent` changes
+  (T-156/T-163/T-165) that only shows up on real hardware, not the emulator; (3) real network/LLM
+  latency or provider behavior differences between the two run dates. Needs real investigation
+  (comparing T-134's and today's `results` arrays goal-by-goal for the SAME goals that used to
+  succeed, not just the aggregate rate) before guessing further — not done here, the T-121 re-run's
+  own scope was "get an honest number and explain what's explainable," not a full second
+  investigation on top of the loop-reliability one already closed today.

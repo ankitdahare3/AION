@@ -67,6 +67,21 @@ object IntentClassifier {
             "reply kar",
             "bhar",
             "submit kar",
+            // T-166 (BACKLOG.md, found via a real T-121 benchmark re-run): "check karo"/"dikhao"/
+            // "batao"/"band karo"/"badhao" are all common Hindi command verbs that had NO entry
+            // here at all — every goal using only one of these fell all the way through to the
+            // final `return Intent.CHAT`, diverting a real device-read/action goal to ChatAgent,
+            // which then fabricated a plausible-sounding answer instead of ever attempting the
+            // real automation path (e.g. "battery percentage batao", "current location check
+            // karo", "wallet balance dikhao" all got made-up answers). `dikhao`/`band` already
+            // exist in systemControlWords for AION-specific SYSTEM goals, but SYSTEM classification
+            // requires a systemTriggerWord too and short-circuits before this list is ever
+            // consulted, so adding them here doesn't affect those cases.
+            "check kar",
+            "dikhao",
+            "batao",
+            "band kar",
+            "badhao",
         )
 
     private val infoWords =

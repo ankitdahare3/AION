@@ -117,6 +117,32 @@ class IntentClassifierTest {
             "AION stop" to Intent.SYSTEM,
         )
 
+    // T-166 — found via a real T-121 benchmark re-run: these exact phrases (real benchmark goals)
+    // were all falling through to CHAT because "check karo"/"dikhao"/"batao"/"band karo"/"badhao"
+    // had no actionVerbs entry, so ChatAgent fabricated an answer instead of ever attempting the
+    // real automation/INFO_QUERY path. Not CHAT is the whole fix — SIMPLE_ACTION vs INFO_QUERY
+    // doesn't matter downstream (IntentRoutingAgent only diverts CHAT to ChatAgent).
+    @Test
+    fun `T-166 - real benchmark phrases that used to fall through to CHAT no longer do`() {
+        val shouldNotBeChat =
+            listOf(
+                "battery percentage batao",
+                "wallet balance dikhao",
+                "current location check karo",
+                "storage space check karo",
+                "bluetooth band karo",
+                "volume badhao",
+                "unread messages check karo",
+                "recent transactions dikhao",
+            )
+        for (utterance in shouldNotBeChat) {
+            assertTrue(
+                "\"$utterance\" should not classify as CHAT (would divert to a fabricated ChatAgent answer)",
+                IntentClassifier.classify(utterance) != Intent.CHAT,
+            )
+        }
+    }
+
     @Test
     fun `at least 90 percent of the 100-utterance labeled set classifies correctly`() {
         assertTrue("expected exactly 100 labeled utterances, found ${labeled.size}", labeled.size == 100)
