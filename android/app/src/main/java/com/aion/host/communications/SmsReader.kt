@@ -16,7 +16,10 @@ data class SmsItem(
  * Gracefully returns an empty list without `READ_SMS`, same degrade pattern as `CalendarReader`/
  * `CallLogReader`. Deliberately just a raw reader — no transaction-parsing logic here; the
  * finance-via-SMS roadmap item (owner-approved, TASKS.md EPIC 17) is its own separate task that
- * will consume this, not something to build speculatively alongside a Communications screen. */
+ * will consume this, not something to build speculatively alongside a Communications screen.
+ * Also gracefully returns empty if the query itself throws — found live via T-160's Weather work:
+ * a `pm clear` on `com.android.providers.telephony` briefly left its database directory missing,
+ * and an unguarded query crashed the whole app with `SQLiteException`. */
 class SmsReader(private val context: Context) {
     fun recentMessages(limit: Int = 20): List<SmsItem> {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
@@ -24,19 +27,23 @@ class SmsReader(private val context: Context) {
         }
         val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)
         val messages = mutableListOf<SmsItem>()
-        context.contentResolver
-            .query(Telephony.Sms.CONTENT_URI, projection, null, null, "${Telephony.Sms.DATE} DESC")
-            ?.use { cursor ->
-                while (cursor.moveToNext() && messages.size < limit) {
-                    messages.add(
-                        SmsItem(
-                            address = cursor.getString(0) ?: "",
-                            body = cursor.getString(1) ?: "",
-                            timestampMs = cursor.getLong(2),
-                        ),
-                    )
+        try {
+            context.contentResolver
+                .query(Telephony.Sms.CONTENT_URI, projection, null, null, "${Telephony.Sms.DATE} DESC")
+                ?.use { cursor ->
+                    while (cursor.moveToNext() && messages.size < limit) {
+                        messages.add(
+                            SmsItem(
+                                address = cursor.getString(0) ?: "",
+                                body = cursor.getString(1) ?: "",
+                                timestampMs = cursor.getLong(2),
+                            ),
+                        )
+                    }
                 }
-            }
+        } catch (e: Exception) {
+            return emptyList()
+        }
         return messages
     }
 }

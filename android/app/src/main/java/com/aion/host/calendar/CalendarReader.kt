@@ -21,7 +21,9 @@ data class CalendarEvent(
 /** Reads today's real events via `CalendarContract.Instances` (resolves recurring events within
  * a range — the raw `Events` table wouldn't). Gracefully returns an empty list without the
  * `READ_CALENDAR` permission, same degrade pattern as `ShizukuBridge`/`AppLockGate` — this project
- * never crashes on a missing capability, it reports "not available." */
+ * never crashes on a missing capability, it reports "not available." Also gracefully returns
+ * empty if the query itself throws (e.g. a transiently-unavailable content provider) rather than
+ * crashing the screen (T-160 found this exact crash live via `SmsReader`). */
 class CalendarReader(private val context: Context) {
     fun todayEvents(nowMs: Long = System.currentTimeMillis()): List<CalendarEvent> {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
@@ -43,20 +45,24 @@ class CalendarReader(private val context: Context) {
                 CalendarContract.Instances.ALL_DAY,
             )
         val events = mutableListOf<CalendarEvent>()
-        context.contentResolver
-            .query(uri, projection, null, null, "${CalendarContract.Instances.BEGIN} ASC")
-            ?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    events.add(
-                        CalendarEvent(
-                            title = cursor.getString(0) ?: "(no title)",
-                            startMs = cursor.getLong(1),
-                            endMs = cursor.getLong(2),
-                            allDay = cursor.getInt(3) != 0,
-                        ),
-                    )
+        try {
+            context.contentResolver
+                .query(uri, projection, null, null, "${CalendarContract.Instances.BEGIN} ASC")
+                ?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        events.add(
+                            CalendarEvent(
+                                title = cursor.getString(0) ?: "(no title)",
+                                startMs = cursor.getLong(1),
+                                endMs = cursor.getLong(2),
+                                allDay = cursor.getInt(3) != 0,
+                            ),
+                        )
+                    }
                 }
-            }
+        } catch (e: Exception) {
+            return emptyList()
+        }
         return events
     }
 }

@@ -64,11 +64,12 @@ import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.ui.theme.AionTheme
 import com.aion.host.usage.UsageStatsScreen
+import com.aion.host.weather.WeatherScreen
 import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS, PROACTIVE, FINANCE }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS, PROACTIVE, FINANCE, WEATHER }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -277,6 +278,11 @@ private fun AionApp(
                             Text(if (screen == Screen.FINANCE) "Back to Home" else "Finance")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.WEATHER) Screen.HOME else Screen.WEATHER
+                        }) {
+                            Text(if (screen == Screen.WEATHER) "Back to Home" else "Weather")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -324,6 +330,7 @@ private fun AionApp(
                                 modifier = Modifier.weight(1f),
                             )
                         Screen.FINANCE -> FinanceScreen(resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.WEATHER -> WeatherScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,

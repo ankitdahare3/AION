@@ -13,6 +13,7 @@ class SetupWizardScreenTest {
         assertEquals(Manifest.permission.READ_CALENDAR, runtimePermissionFor(SetupPermission.CALENDAR))
         assertEquals(Manifest.permission.READ_CALL_LOG, runtimePermissionFor(SetupPermission.CALL_LOG))
         assertEquals(Manifest.permission.READ_SMS, runtimePermissionFor(SetupPermission.SMS))
+        assertEquals(Manifest.permission.ACCESS_COARSE_LOCATION, runtimePermissionFor(SetupPermission.LOCATION))
     }
 
     @Test

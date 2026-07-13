@@ -64,6 +64,10 @@ enum class SetupPermission(
         "SMS",
         "Lets AION show your recent messages on the Communications screen (T-152).",
     ),
+    LOCATION(
+        "Location",
+        "Lets AION show real local weather on the Weather screen (T-160).",
+    ),
     ;
 
     fun isGranted(context: Context): Boolean =
@@ -110,6 +114,9 @@ enum class SetupPermission(
             SMS ->
                 ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) ==
                     PackageManager.PERMISSION_GRANTED
+            LOCATION ->
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED
         }
 
     /** Settings screen to resolve this item; null means it's handled another way (adb, or a runtime-permission launcher). */
@@ -130,5 +137,6 @@ enum class SetupPermission(
             CALENDAR -> null
             CALL_LOG -> null
             SMS -> null
+            LOCATION -> null
         }
 }

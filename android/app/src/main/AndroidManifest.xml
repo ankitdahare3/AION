@@ -15,6 +15,8 @@
     <!-- T-152 (EPIC 17) — real Communications screen (calls + SMS). -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- T-160 (EPIC 17) — real Weather screen (Open-Meteo, free, no API key). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- PACKAGE_USAGE_STATS is granted via Settings.ACTION_USAGE_ACCESS_SETTINGS, never a runtime dialog. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"

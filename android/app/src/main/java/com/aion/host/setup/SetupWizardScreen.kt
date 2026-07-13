@@ -115,6 +115,7 @@ internal fun runtimePermissionFor(permission: SetupPermission): String? =
         SetupPermission.CALENDAR -> Manifest.permission.READ_CALENDAR
         SetupPermission.CALL_LOG -> Manifest.permission.READ_CALL_LOG
         SetupPermission.SMS -> Manifest.permission.READ_SMS
+        SetupPermission.LOCATION -> Manifest.permission.ACCESS_COARSE_LOCATION
         else -> null
     }
 
