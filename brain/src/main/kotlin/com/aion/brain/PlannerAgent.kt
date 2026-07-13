@@ -54,7 +54,15 @@ class PlannerAgent(
     private val memoryStore: MemoryStore? = null,
     private val screenSnapshotProvider: ScreenSnapshotProvider? = null,
 ) : Agent {
+    // Antigravity-audit finding, 2026-07-13: `callAndParse` used to swallow `router.route`'s
+    // exception into a bare `null`, indistinguishable from a plain JSON-parse failure — a real
+    // network/auth/quota error and "the model just replied with prose" looked identical in
+    // `s.failures`. Capturing the real message here means whoever reads the audit trail actually
+    // sees WHY, not just THAT it failed.
+    private var lastRouteFailure: String? = null
+
     override suspend fun step(s: AgentState): AgentState {
+        lastRouteFailure = null
         val steps = callAndParse(s.goal, repairHint = false) ?: callAndParse(s.goal, repairHint = true)
         return if (steps != null) {
             s.copy(plan = steps)
@@ -63,9 +71,11 @@ class PlannerAgent(
             // AionGraph's frozen run() loop means ResponderAgent never gets a turn — so this must
             // author its own natural-language response too, or the graph would end with `response`
             // still null (confirmed by an earlier real benchmark run, T-121/BACKLOG.md).
+            val reason = lastRouteFailure?.let { "planner: routing failed: $it" }
+                ?: "planner: failed to produce a valid JSON plan after retry"
             s.copy(
                 done = true,
-                failures = s.failures + "planner: failed to produce a valid JSON plan after retry",
+                failures = s.failures + reason,
                 response = ResponsePhrasing.forFailure(FailureCause.E4_MODEL_PLAN_ERROR, ResponsePhrasing.isHinglish(s.goal)),
             )
         }
@@ -86,6 +96,7 @@ class PlannerAgent(
             try {
                 router.route(req)
             } catch (e: Exception) {
+                lastRouteFailure = e.message ?: e.javaClass.simpleName
                 return null
             }
         return parsePlan(result.text)

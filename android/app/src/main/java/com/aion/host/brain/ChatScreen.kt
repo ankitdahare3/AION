@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -70,11 +71,18 @@ fun ChatScreen(
     approvalGate: ApprovalGate,
     modifier: Modifier = Modifier,
 ) {
-    var goal by remember { mutableStateOf("") }
-    var submittedGoal by remember { mutableStateOf("") }
-    var response by remember { mutableStateOf<String?>(null) }
+    // Antigravity-audit finding, 2026-07-13: this was `remember`, so rotating the device or
+    // toggling dark mode (an Activity recreation either way) wiped the goal/reply mid-conversation.
+    // `rememberSaveable` survives both config changes and process death (Bundle-backed), not just
+    // in-memory recomposition — the actual bug, not a smaller stand-in for it.
+    var goal by rememberSaveable { mutableStateOf("") }
+    var submittedGoal by rememberSaveable { mutableStateOf("") }
+    var response by rememberSaveable { mutableStateOf<String?>(null) }
+    // NOT rememberSaveable: `running=true` would restore across a recreation even though the
+    // in-flight coroutine (tied to the OLD rememberCoroutineScope, cancelled on recreation) is
+    // genuinely gone — that would strand the UI on "Running…" forever with no way to retry.
     var running by remember { mutableStateOf(false) }
-    var muted by remember { mutableStateOf(false) }
+    var muted by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 

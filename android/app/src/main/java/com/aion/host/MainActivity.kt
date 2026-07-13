@@ -2,6 +2,7 @@ package com.aion.host
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,11 +90,6 @@ class MainActivity : FragmentActivity() {
 
     private var resumeTrigger by mutableIntStateOf(0)
 
-    // T-138 — starts locked; a device with neither biometrics nor a screen lock enrolled skips the
-    // gate entirely (AppLockGate.canAuthenticate == false) rather than stranding the owner outside
-    // their own app with no way in.
-    private var unlocked by mutableStateOf(false)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // T-116 finding — no theme in this project sets windowNoTitle, so the platform's default
@@ -103,8 +100,14 @@ class MainActivity : FragmentActivity() {
         // which is exactly why it never showed up until now. The app never used the title bar for
         // anything, so hiding it outright is the fix, not working around it with inset padding.
         actionBar?.hide()
-        if (!AppLockGate.canAuthenticate(this)) unlocked = true
         setContent {
+            // Antigravity-audit finding, 2026-07-13: this was a plain Activity field
+            // (`mutableStateOf`, not `rememberSaveable`), so rotating the device re-created
+            // MainActivity with `unlocked` reset to false — an already-unlocked session had to
+            // pass the biometric prompt again on every rotation. T-138 — starts locked; a device
+            // with neither biometrics nor a screen-lock credential enrolled skips the gate
+            // entirely rather than stranding the owner outside their own app with no way in.
+            var unlocked by rememberSaveable { mutableStateOf(!AppLockGate.canAuthenticate(this)) }
             if (unlocked) {
                 AionApp(
                     resumeTrigger,
@@ -117,13 +120,11 @@ class MainActivity : FragmentActivity() {
                     realApprovalGate,
                 )
             } else {
-                LockScreen(onUnlockTap = ::attemptUnlock)
+                LockScreen(onUnlockTap = {
+                    AppLockGate.authenticate(this, onSuccess = { unlocked = true }, onFailure = {})
+                })
             }
         }
-    }
-
-    private fun attemptUnlock() {
-        AppLockGate.authenticate(this, onSuccess = { unlocked = true }, onFailure = {})
     }
 
     override fun onResume() {
@@ -162,10 +163,24 @@ private fun AionApp(
     pluginRegistry: BuiltInPluginRegistry,
     realApprovalGate: RealApprovalGate,
 ) {
-    var screen by remember { mutableStateOf(Screen.SETUP) }
-    var overlayRunning by remember { mutableStateOf(false) }
-    var voiceRunning by remember { mutableStateOf(false) }
+    // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
+    // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
+    // `rememberSaveable` survives that (Screen is a Kotlin enum, inherently Serializable via
+    // `java.lang.Enum`, so no custom Saver is needed).
+    var screen by rememberSaveable { mutableStateOf(Screen.SETUP) }
+    var overlayRunning by rememberSaveable { mutableStateOf(false) }
+    var voiceRunning by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Antigravity-audit finding, 2026-07-13: with no back-stack at all, the system Back button
+    // always exited the whole app instead of returning to the previous screen. This app is a flat,
+    // one-level menu (no screen ever navigates to a third screen), so a full Navigation Compose
+    // back-stack would be solving a deeper-hierarchy problem this app doesn't have — going back to
+    // Setup (the de facto home screen) is the correct, minimal fix. Back still exits normally once
+    // already on Setup.
+    BackHandler(enabled = screen != Screen.SETUP) {
+        screen = Screen.SETUP
+    }
 
     // T-120 (DOC-017 T4) — block screenshots/screen-recording/recents-thumbnail capture while raw
     // API key values are on screen; cleared again once the user navigates away.

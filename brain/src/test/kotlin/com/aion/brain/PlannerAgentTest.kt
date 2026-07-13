@@ -185,6 +185,31 @@ class PlannerAgentTest {
             )
         }
 
+    // Antigravity-audit finding, 2026-07-13 — `callAndParse` used to swallow `router.route`'s
+    // exception into a bare `null`, indistinguishable from "the model replied with plain prose."
+    // A real routing failure (network/auth/quota) must surface its own message in `s.failures`,
+    // not the generic parse-failure text.
+    @Test
+    fun `a real routing exception surfaces its own message, not a generic parse-failure string`() =
+        runTest {
+            val throwingProvider =
+                object : Provider {
+                    override val id = "throwing"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        throw IllegalStateException("provider quota exhausted")
+                    }
+                }
+
+            val result = PlannerAgent(routerFor(throwingProvider)).step(AgentState(goal = "do anything"))
+
+            assertTrue(result.done)
+            assertTrue(result.failures.any { it.contains("provider quota exhausted") })
+            assertFalse(result.failures.any { it.contains("failed to produce a valid JSON plan") })
+        }
+
     // T-121 finding — real models routinely ignore "no markdown fences" anyway.
     @Test
     fun `parses a plan wrapped in markdown code fences despite being told not to`() =
