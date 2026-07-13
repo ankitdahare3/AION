@@ -5,6 +5,7 @@ import com.aion.brain.BrainRequest
 import com.aion.brain.BrainResult
 import com.aion.brain.BudgetGuard
 import com.aion.brain.ExecutionOutcome
+import com.aion.brain.FewShotBank
 import com.aion.brain.Memory
 import com.aion.brain.MemoryStore
 import com.aion.brain.PlanStep
@@ -125,7 +126,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok:${step.action}")
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
@@ -165,7 +166,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok")
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "open settings"))
@@ -206,7 +207,7 @@ class AionGraphFactoryTest {
                     }
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "turn on wifi"))
@@ -214,6 +215,50 @@ class AionGraphFactoryTest {
 
             assertEquals("expected 2 failing attempts + 1 successful retry", 3, callCount)
             assertTrue(result.done)
+            assertEquals(ResponsePhrasing.forSuccess(hinglish = false), result.response)
+        }
+
+    @Test
+    fun `T-162 - a goal that keeps failing the same way self-corrects once FewShotBank is actually wired in`() =
+        runTest {
+            val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+            val approvalGate = RealApprovalGate(ApprovalGateService(AuditLogger(FakeAuditDao())))
+
+            // Simulates a real model that keeps proposing the same wrong element until its own
+            // system prompt contains the "Previous mistakes" warning PlannerAgent folds in from
+            // FewShotBank — exactly the mechanism T-081 built and unit-tested in isolation, but
+            // which no real caller ever wired up before this fix (found live during T-158).
+            val provider =
+                object : Provider {
+                    override val id = "stubborn"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        val target = if (req.system.contains("Previous mistakes")) "Wi-Fi toggle" else "WRONG_ELEMENT"
+                        val text = """[{"action":"tap","target":"$target","expected":"Wi-Fi on","sideEffect":false}]"""
+                        return BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
+                    }
+                }
+            val router = ProviderRouter(listOf(provider), noopScoreStore, alwaysCanSpend)
+
+            val executor =
+                ActionExecutor { step: PlanStep ->
+                    if (step.target == "Wi-Fi toggle") {
+                        ExecutionOutcome(success = true, observation = "ok:${step.action}")
+                    } else {
+                        ExecutionOutcome(success = false, observation = "", error = "could not resolve element: ${step.target}")
+                    }
+                }
+
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
+
+            val result = graph.run(com.aion.brain.AgentState(goal = "turn on wifi for the T-162 test"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue("expected the run to eventually succeed instead of exhausting maxSteps", result.done)
             assertEquals(ResponsePhrasing.forSuccess(hinglish = false), result.response)
         }
 
@@ -245,7 +290,7 @@ class AionGraphFactoryTest {
             val executor = ActionExecutor { step: PlanStep -> ExecutionOutcome(success = true, observation = "ok:${step.action}") }
             val liveScreen = ScreenSnapshotProvider { "Wi-Fi toggle [off], Bluetooth toggle [off]" }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, liveScreen)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, liveScreen, FewShotBank())
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))

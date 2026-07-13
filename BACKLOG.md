@@ -90,28 +90,6 @@
   already-known `gesture callback never fired within 5000ms` (`ActionDispatcher`'s own documented
   emulator-reliability gap, T-041).
 
-- **`AionGraphFactory`'s route closure has a stale `lastFailureCount` bug** — found while tracing
-  the graph's actual flow for T-115 (ResponderAgent natural-language replies). `lastFailureCount`
-  is a `var` captured once per `create()` call and only ever updated inside the
-  `"executor" -> s.failures.size > lastFailureCount` branch; `ReflectorAgent`'s own recoverable-cause
-  branch resets `s.failures` to `emptyList()` on every retry, but nothing resets `lastFailureCount`
-  back down to match. Effect: the FIRST failure for a goal is correctly detected as new (`failures.size`
-  1 > `lastFailureCount` 0) and routes to `ReflectorAgent` for a possible retry; if the SAME failure
-  happens again after the retry, `failures.size` is back to 1 (list was cleared, then one new entry
-  added) — which is NOT greater than the already-recorded `lastFailureCount` (1) — so the "new
-  failure" check silently fails and the run falls through to whatever `currentStep >= plan.size`
-  says instead, which for a short plan is often `"responder"` directly, skipping `ReflectorAgent`'s
-  classification entirely on the SECOND occurrence of the exact same recoverable failure. This is
-  real, reproducible in the T-121 benchmark data (e.g. "wifi on karo" ending at `stepCount: 16`,
-  well under the 30-step circuit breaker, with the raw `"could not resolve element: Wi-Fi toggle"`
-  text landing straight in `ResponderAgent`'s failures-branch) — not fixed as part of T-115 because
-  it's a retry-count/recovery-correctness bug, not a response-tone bug, and T-115's `ResponsePhrasing`
-  fix already makes BOTH the reflector-routed and responder-routed outcomes equally natural/safe to
-  show a user. Whoever picks this up: `lastFailureCount` needs to track total failures ever seen
-  (e.g. increment a separate counter in `ReflectorAgent`'s branches, or compare against a running
-  total instead of the post-clear list size) so every recoverable failure gets its intended retry
-  attempt, not just the first one per goal.
-
 - **`ExecutorAgent`'s empty-plan "plan complete" branch is dead code today, but would leak an
   unnaturalized string if ever reached** — found alongside T-115. `s.plan.getOrNull(s.currentStep)
   ?: return s.copy(done = true, response = s.response ?: "plan complete")` only fires when
@@ -189,6 +167,31 @@
   Raises the priority of angle (2) (a per-goal retry ceiling) since a wording fix alone clearly
   isn't sufficient. Any future roadmap item needing multi-step in-app navigation (flight status,
   and anything past a single screen) should be expected to hit this until it's fixed.
+
+  **Update 2026-07-13 (T-162)**: traced this further and found `FewShotBank` (T-081's "don't
+  repeat this mistake" mechanism) was fully built and unit-tested but never actually instantiated
+  anywhere in real app code — every real replan was structurally blind to the plan that just
+  failed. Wired it into `AionGraphFactory`/`ReflectorAgent`/`PlannerAgent` and proved with a real
+  graph-level test that a goal which would previously be incapable of self-correcting now does.
+  Re-ran T-158's exact original scenario live with the fix installed — it STILL didn't resolve
+  within ~10 more minutes, so this is a real, partial improvement, not a full fix. Root-caused why:
+  `FewShotBank` deliberately (and already-testedly, see `FewShotBankTest`) keeps only the single
+  MOST RECENT mistake per goal — a `Map` keyed by goal, not an accumulating list, a genuine T-081
+  design tradeoff, not a bug, so not changed. On a screen with several plausible-but-wrong targets
+  (Network & internet, Connected devices, Apps, Notifications, Battery, Storage, Sound & vibration…),
+  a model cycling between 2-3 different wrong choices can "forget" an earlier mistake the instant a
+  different one overwrites it in the bank. Whoever picks this up next has two real options, now
+  precisely scoped rather than guessed at: (a) let `FewShotBank` accumulate multiple mistakes per
+  goal (would need `FewShotBankTest`'s existing "replaces rather than duplicates" test rewritten,
+  a deliberate behavior change, not a bugfix) — bounded by the same `maxSize`/LRU eviction it
+  already has, just flat across all entries instead of one-per-goal; or (b) angle (2) from the
+  original entry above, a per-goal retry ceiling that converts a stall into an honest, faster
+  UNKNOWN failure without needing the planner to actually learn anything. Also still worth checking
+  directly, not yet done: whether `ExecutorAgent`/`StepVerifier` are even detecting a failure at
+  all on this specific stuck scenario (if a tap "succeeds" per `StepVerifier`'s confidence check
+  without real forward progress, `ReflectorAgent`/`FewShotBank` never get invoked at all, and no
+  amount of few-shot learning would help) — would need real instrumentation/logging to confirm,
+  not assumed here.
 
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is

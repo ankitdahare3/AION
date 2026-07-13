@@ -24,11 +24,22 @@ enum class FailureCause {
  * ResponderAgent never gets a turn. Verified by tracing `run()` directly rather than assumed;
  * routing the abort case through Responder first isn't possible without changing that loop, which
  * lives in the frozen `AionGraph.kt` (CLAUDE.md: no signature/behavior changes there without an
- * ADR). Full DOC-007 scope — ElementMap patches, planner few-shot bank, provider re-scoring — is
- * EPIC 8 (T-080+), not this. AionGraph's own `maxSteps` circuit breaker already bounds retry loops,
- * so this doesn't need its own retry counter.
+ * ADR). Full DOC-007 scope — ElementMap patches, provider re-scoring — is EPIC 8 (T-080+), not
+ * this. AionGraph's own `maxSteps` circuit breaker already bounds retry loops, so this doesn't need
+ * its own retry counter.
+ *
+ * [fewShotBank] (T-081/T-090, optional — same "wired only where a real caller exists" pattern as
+ * `PlannerAgent`'s own optional dependencies) — found 2026-07-13 during T-158's live 30-step-loop
+ * investigation: `FewShotBank` was fully built and unit-tested (`PlannerFewShotHarnessTest`) but
+ * never instantiated anywhere in real app code, so `PlannerAgent` never actually received one and
+ * every ReflectorAgent-triggered replan started completely blind to the attempt that just failed —
+ * a real, plausible root cause for goals that loop without ever converging: nothing ever told the
+ * planner "don't repeat that." Recording a [CounterExample] here, right before clearing state for a
+ * fresh replan, is what makes T-081's whole mechanism actually reachable during a live run.
  */
-class ReflectorAgent : Agent {
+class ReflectorAgent(
+    private val fewShotBank: FewShotBank? = null,
+) : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val latest =
             s.failures.lastOrNull()
@@ -38,6 +49,7 @@ class ReflectorAgent : Agent {
                 )
         val cause = classify(latest)
         return if (cause in RECOVERABLE) {
+            fewShotBank?.add(CounterExample(goal = s.goal, badPlanJson = s.plan.toString(), reason = latest))
             // Clearing failures too, not just plan/currentStep: a fresh replan attempt should start
             // clean, so a subsequent success isn't misreported by ResponderAgent as still-failed
             // because of a stale failure message from the attempt being retried (T-082 recovery drill).

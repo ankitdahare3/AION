@@ -122,6 +122,37 @@ class ReflectorAgentTest {
         }
 
     @Test
+    fun `T-162 - a recoverable failure records a counter-example when a FewShotBank is provided`() =
+        runTest {
+            val bank = FewShotBank()
+            val s =
+                AgentState(
+                    goal = "wrong element goal",
+                    plan = listOf(PlanStep("tap", "WRONG_ELEMENT", "y", false)),
+                    currentStep = 1,
+                    failures = listOf("could not resolve element: WRONG_ELEMENT"),
+                )
+
+            ReflectorAgent(bank).step(s)
+
+            val examples = bank.examplesFor("wrong element goal")
+            assertEquals(1, examples.size)
+            assertTrue(examples[0].badPlanJson.contains("WRONG_ELEMENT"))
+            assertEquals("could not resolve element: WRONG_ELEMENT", examples[0].reason)
+        }
+
+    @Test
+    fun `T-162 - an unrecoverable failure does not record a counter-example (nothing to retry)`() =
+        runTest {
+            val bank = FewShotBank()
+            val s = AgentState(goal = "send the report", failures = listOf("Shizuku permission denied"))
+
+            ReflectorAgent(bank).step(s)
+
+            assertTrue(bank.examplesFor("send the report").isEmpty())
+        }
+
+    @Test
     fun `no failures to reflect on ends the run rather than looping, with a natural response`() =
         runTest {
             val result = ReflectorAgent().step(AgentState(goal = "g"))

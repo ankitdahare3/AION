@@ -4,6 +4,7 @@ import com.aion.brain.AionGraph
 import com.aion.brain.ApprovalGate
 import com.aion.brain.ChatAgent
 import com.aion.brain.ExecutorAgent
+import com.aion.brain.FewShotBank
 import com.aion.brain.IntentRoutingAgent
 import com.aion.brain.MemoryStore
 import com.aion.brain.MemoryWriterAgent
@@ -40,6 +41,13 @@ import javax.inject.Singleton
  * action for them. Safe against `AionGraph`'s frozen `run()` loop without touching `route()` at
  * all — [ChatAgent] sets `done=true` on its very first step, and `run()`'s `while (... && !s.done)`
  * check exits before `route("planner", s)`'s unconditional "executor" next-hop is ever used.
+ *
+ * T-162 (BACKLOG.md, found live during T-158's 30-step-loop investigation) — [fewShotBank] is now
+ * shared between [PlannerAgent] and [ReflectorAgent], not left at its default-null. T-081/T-090
+ * built the whole "don't repeat this mistake" mechanism and unit-tested it in isolation, but no
+ * real caller ever constructed a [FewShotBank] or passed one in here — so every live replan was
+ * blind to the attempt that just failed, a real, plausible driver of goals that loop instead of
+ * converging or failing fast.
  */
 @Singleton
 class AionGraphFactory
@@ -48,6 +56,7 @@ class AionGraphFactory
         private val checkpointer: RoomCheckpointer,
         private val memoryStore: MemoryStore,
         private val screenSnapshotProvider: ScreenSnapshotProvider,
+        private val fewShotBank: FewShotBank,
     ) {
         fun create(
             router: ProviderRouter,
@@ -63,12 +72,13 @@ class AionGraphFactory
                                 planner =
                                     PlannerAgent(
                                         router,
+                                        fewShotBank = fewShotBank,
                                         memoryStore = memoryStore,
                                         screenSnapshotProvider = screenSnapshotProvider,
                                     ),
                             ),
                         "executor" to ExecutorAgent(pluginManager),
-                        "reflector" to ReflectorAgent(),
+                        "reflector" to ReflectorAgent(fewShotBank),
                         "responder" to ResponderAgent(),
                         "memory_writer" to MemoryWriterAgent(),
                     ),
