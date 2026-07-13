@@ -52,6 +52,10 @@ enum class SetupPermission(
         "Ignore battery optimization",
         "Keeps AION's services alive in the background.",
     ),
+    CALENDAR(
+        "Calendar",
+        "Lets AION show your real events on the Calendar screen (T-151).",
+    ),
     ;
 
     fun isGranted(context: Context): Boolean =
@@ -89,6 +93,9 @@ enum class SetupPermission(
                 val pm = context.getSystemService(PowerManager::class.java)
                 pm?.isIgnoringBatteryOptimizations(context.packageName) == true
             }
+            CALENDAR ->
+                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
+                    PackageManager.PERMISSION_GRANTED
         }
 
     /** Settings screen to resolve this item; null means it's handled another way (adb, or a runtime-permission launcher). */
@@ -106,5 +113,6 @@ enum class SetupPermission(
                     Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                     Uri.parse("package:${context.packageName}"),
                 )
+            CALENDAR -> null
         }
 }

@@ -48,6 +48,7 @@ import com.aion.host.brain.BuiltInPluginRegistry
 import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.brain.RealApprovalGate
+import com.aion.host.calendar.CalendarScreen
 import com.aion.host.security.AppLockGate
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
@@ -62,7 +63,7 @@ import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -241,6 +242,11 @@ private fun AionApp(
                             Text(if (screen == Screen.AUDIT_LOG) "Back to Home" else "Audit Log")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.CALENDAR) Screen.HOME else Screen.CALENDAR
+                        }) {
+                            Text(if (screen == Screen.CALENDAR) "Back to Home" else "Calendar")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -277,6 +283,7 @@ private fun AionApp(
                         Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
                         Screen.API_KEYS -> SecretsScreen(secretVault, auditLogger, modifier = Modifier.weight(1f))
                         Screen.SETUP -> SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
+                        Screen.CALENDAR -> CalendarScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,

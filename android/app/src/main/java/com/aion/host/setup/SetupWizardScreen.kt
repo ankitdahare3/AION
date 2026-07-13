@@ -73,6 +73,18 @@ fun SetupWizardScreen(
             }
         }
 
+    val calendarPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            statuses = statuses + (SetupPermission.CALENDAR to granted)
+            scope.launch {
+                auditLogger.record(
+                    "user",
+                    "setup.permission.result",
+                    """{"permission":"CALENDAR","granted":$granted}""",
+                )
+            }
+        }
+
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Text("AION Setup", style = MaterialTheme.typography.headlineSmall)
         Text(
@@ -97,6 +109,7 @@ fun SetupWizardScreen(
                             SetupPermission.MICROPHONE -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             SetupPermission.NOTIFICATIONS ->
                                 notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            SetupPermission.CALENDAR -> calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
                             else -> permission.settingsIntent(context)?.let { context.startActivity(it) }
                         }
                     },
