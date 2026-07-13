@@ -25,15 +25,33 @@ class FewShotBankTest {
     }
 
     @Test
-    fun `re-adding the same goal replaces its counter-example rather than duplicating it`() {
+    fun `T-163 - re-adding the same goal accumulates distinct mistakes instead of overwriting the last one`() {
+        // Was a real gap: a Map keyed by goal meant a SECOND mistake silently erased the first,
+        // so a model cycling between 2-3 different wrong choices could "forget" an earlier one
+        // the instant a different one overwrote it. ReflectorAgent's own retry ceiling (T-163,
+        // default 5) is what makes accumulating safe now — a single stuck run can't add more
+        // than a handful of entries for its own goal before the ceiling ends the run anyway.
         val bank = FewShotBank()
         bank.add(CounterExample("wifi on karo", "[]", "first mistake"))
         bank.add(CounterExample("wifi on karo", "[]", "second mistake"))
 
         val result = bank.examplesFor("wifi on karo")
 
-        assertEquals(1, result.size)
-        assertEquals("second mistake", result.single().reason)
+        assertEquals(2, result.size)
+        assertEquals(listOf("first mistake", "second mistake"), result.map { it.reason })
+    }
+
+    @Test
+    fun `T-163 - a single goal's mistakes are capped at maxPerGoal, evicting its own oldest entry`() {
+        val bank = FewShotBank(maxPerGoal = 2)
+        bank.add(CounterExample("wifi on karo", "[]", "mistake 1"))
+        bank.add(CounterExample("wifi on karo", "[]", "mistake 2"))
+        bank.add(CounterExample("wifi on karo", "[]", "mistake 3"))
+
+        val result = bank.examplesFor("wifi on karo")
+
+        assertEquals(2, result.size)
+        assertEquals(listOf("mistake 2", "mistake 3"), result.map { it.reason })
     }
 
     @Test

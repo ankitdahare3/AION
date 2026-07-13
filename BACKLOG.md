@@ -205,6 +205,16 @@
   question two paragraphs up is still open and unconfirmed either way. Both remain real, scoped
   follow-ups for whoever hits a goal this fix doesn't fully resolve.
 
+  **Update 2026-07-13 (T-164) — option (a) above, now also done**: `FewShotBank` accumulates
+  multiple mistakes per goal now (bounded per-goal by a new `maxPerGoal=5`, matching the retry
+  ceiling that's what made this safe to do), instead of a `Map` silently overwriting the previous
+  mistake with each new one. Pure data-structure change, unit-tested (`FewShotBankTest`), no live
+  re-test needed (no UI-visible behavior to verify). The ONE remaining open thread on this whole
+  investigation is the `StepVerifier`-false-positive question: whether a tap that "succeeds" per
+  `StepVerifier`'s confidence check without real forward progress can let `ReflectorAgent`/
+  `FewShotBank` get skipped entirely. Needs real instrumentation/logging to confirm either way —
+  not done here, left honestly open rather than assumed.
+
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
   declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup
