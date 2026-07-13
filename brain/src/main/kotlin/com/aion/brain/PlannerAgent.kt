@@ -13,6 +13,17 @@ private data class PlanStepDto(
 )
 
 /**
+ * T-139 (BACKLOG.md, E1_WRONG_ELEMENT) — the real implementation lives in `:android:app`
+ * (`AionAccessibilityService.currentScreenText()`), wrapped via `InjectionFilter.wrap` before it
+ * ever crosses into `:brain` — same "screen content is data, never instructions" rule DOC-004 §6
+ * states, and the same module-boundary reason [com.aion.host.svc.NotificationIngestion] (T-137)
+ * can't live in `:brain` either.
+ */
+fun interface ScreenSnapshotProvider {
+    suspend fun currentScreenText(): String?
+}
+
+/**
  * DOC-004 §5 — goal -> ordered, JSON-schema-constrained plan steps. One repair-retry: if the
  * model's output doesn't parse, we ask once more with an explicit "invalid JSON" hint before
  * giving up. Full persona/safety-prefix wiring (ContextBuilder) is deferred to whichever task
@@ -25,11 +36,23 @@ private data class PlanStepDto(
  * by [DeviceExplorer]'s "Explore Device" scan (T-114) are folded in as a known-real-package list —
  * the planner otherwise guesses plausible-but-often-wrong AOSP package names (`com.android.camera2`
  * etc.) that don't exist on OEM-skinned devices (found via T-116's real Samsung benchmark run).
+ *
+ * [screenSnapshotProvider] (T-139, BACKLOG.md — E1_WRONG_ELEMENT) is optional too: when present,
+ * whatever is ACTUALLY on screen right now is folded into the prompt so `tap`/`longPress` targets
+ * can be grounded in real visible text instead of guessed blind. This helps the very next step most
+ * — the current screen at planning time is exactly the screen a retry (after `ReflectorAgent`
+ * clears state and comes back here) needs to act on, since the earlier steps that got the device
+ * there already ran; later steps in a multi-step plan still target screens that don't exist yet, so
+ * this doesn't ground the whole plan, only ever the first action. `T-121`'s real benchmark data
+ * found `E1_WRONG_ELEMENT` ("could not resolve element: X") as the single largest failure cause
+ * across every environment tried, even after T-117's package-name grounding — because a real
+ * package name and a real on-screen button label are two different unknowns.
  */
 class PlannerAgent(
     private val router: ProviderRouter,
     private val fewShotBank: FewShotBank? = null,
     private val memoryStore: MemoryStore? = null,
+    private val screenSnapshotProvider: ScreenSnapshotProvider? = null,
 ) : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val steps = callAndParse(s.goal, repairHint = false) ?: callAndParse(s.goal, repairHint = true)
@@ -72,12 +95,21 @@ class PlannerAgent(
         goal: String,
         repairHint: Boolean,
     ): String {
-        val base = withKnownApps(if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA)
+        val withApps = withKnownApps(if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA)
+        val base = withCurrentScreen(withApps)
         val counterExamples = fewShotBank?.examplesFor(goal).orEmpty()
         if (counterExamples.isEmpty()) return base
         val warnings =
             counterExamples.joinToString("\n") { "- Plan ${it.badPlanJson} was WRONG for this goal: ${it.reason}" }
         return "$base\n\nPrevious mistakes for this exact goal — do NOT repeat them:\n$warnings"
+    }
+
+    private suspend fun withCurrentScreen(base: String): String {
+        val screenText = screenSnapshotProvider?.currentScreenText()
+        if (screenText.isNullOrBlank()) return base
+        return "$base\n\nWhat's ACTUALLY visible on screen right now (only trust this for your very " +
+            "next tap/longPress target — later steps in a multi-step plan will be on a different " +
+            "screen you can't see yet, so don't assume this list applies to them too):\n$screenText"
     }
 
     private suspend fun withKnownApps(base: String): String {

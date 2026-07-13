@@ -16,6 +16,7 @@ import com.aion.brain.ProviderFailure
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ResponsePhrasing
 import com.aion.brain.ScoreStore
+import com.aion.brain.ScreenSnapshotProvider
 import com.aion.brain.TaskType
 import com.aion.brain.Tier
 import com.aion.brain.plugins.UIAutomationPlugin
@@ -84,6 +85,10 @@ private val emptyMemoryStore =
         override suspend fun softDelete(id: Long) {}
     }
 
+/** T-139: PlannerAgent's optional live-screen context — no real accessibility session in these graph-wiring tests. */
+private val noScreenSnapshot =
+    ScreenSnapshotProvider { null }
+
 /** T-077: ExecutorAgent routes through PluginManager exclusively now — wrap the fake ActionExecutor in the real UIAutomationPlugin. */
 private fun pluginManagerWith(executor: ActionExecutor): PluginManager {
     val manager = PluginManager(PluginApprovalGate { _, _ -> true })
@@ -120,7 +125,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok:${step.action}")
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
@@ -160,7 +165,7 @@ class AionGraphFactoryTest {
                     ExecutionOutcome(success = true, observation = "ok")
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "open settings"))
@@ -201,7 +206,7 @@ class AionGraphFactoryTest {
                     }
                 }
 
-            val factory = AionGraphFactory(checkpointer, emptyMemoryStore)
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot)
             val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
 
             val result = graph.run(com.aion.brain.AgentState(goal = "turn on wifi"))
@@ -210,5 +215,45 @@ class AionGraphFactoryTest {
             assertEquals("expected 2 failing attempts + 1 successful retry", 3, callCount)
             assertTrue(result.done)
             assertEquals(ResponsePhrasing.forSuccess(hinglish = false), result.response)
+        }
+
+    @Test
+    fun `T-139 - a real ScreenSnapshotProvider's text reaches the planner's actual prompt through a real graph run`() =
+        runTest {
+            val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+            val approvalGate = RealApprovalGate(ApprovalGateService(AuditLogger(FakeAuditDao())))
+
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"Wi-Fi toggle","expected":"on","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val router = ProviderRouter(listOf(provider), noopScoreStore, alwaysCanSpend)
+            val executor = ActionExecutor { step: PlanStep -> ExecutionOutcome(success = true, observation = "ok:${step.action}") }
+            val liveScreen = ScreenSnapshotProvider { "Wi-Fi toggle [off], Bluetooth toggle [off]" }
+
+            val factory = AionGraphFactory(checkpointer, emptyMemoryStore, liveScreen)
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
+
+            graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(
+                "expected the live screen snapshot to reach the planner's real system prompt",
+                capturedSystem!!.contains("Wi-Fi toggle [off], Bluetooth toggle [off]"),
+            )
         }
 }

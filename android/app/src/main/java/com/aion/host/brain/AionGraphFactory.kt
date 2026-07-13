@@ -10,6 +10,7 @@ import com.aion.brain.PluginManager
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ReflectorAgent
 import com.aion.brain.ResponderAgent
+import com.aion.brain.ScreenSnapshotProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,6 +38,7 @@ class AionGraphFactory
     constructor(
         private val checkpointer: RoomCheckpointer,
         private val memoryStore: MemoryStore,
+        private val screenSnapshotProvider: ScreenSnapshotProvider,
     ) {
         fun create(
             router: ProviderRouter,
@@ -46,7 +48,12 @@ class AionGraphFactory
             AionGraph(
                 nodes =
                     mapOf(
-                        "planner" to PlannerAgent(router, memoryStore = memoryStore),
+                        "planner" to
+                            PlannerAgent(
+                                router,
+                                memoryStore = memoryStore,
+                                screenSnapshotProvider = screenSnapshotProvider,
+                            ),
                         "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(),
                         "responder" to ResponderAgent(),

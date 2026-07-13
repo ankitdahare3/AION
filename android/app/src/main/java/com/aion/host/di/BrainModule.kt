@@ -3,6 +3,8 @@ package com.aion.host.di
 import com.aion.brain.BudgetGuard
 import com.aion.brain.MemoryStore
 import com.aion.brain.ScoreStore
+import com.aion.brain.ScreenSnapshotProvider
+import com.aion.host.brain.RealScreenSnapshotProvider
 import com.aion.host.brain.RoomBudgetGuard
 import com.aion.host.brain.RoomMemoryStore
 import com.aion.host.brain.RoomScoreStore
@@ -23,4 +25,7 @@ abstract class BrainModule {
 
     @Binds
     abstract fun bindMemoryStore(impl: RoomMemoryStore): MemoryStore
+
+    @Binds
+    abstract fun bindScreenSnapshotProvider(impl: RealScreenSnapshotProvider): ScreenSnapshotProvider
 }

@@ -317,4 +317,70 @@ class PlannerAgentTest {
 
             assertTrue(result.plan.isNotEmpty())
         }
+
+    // T-139 (BACKLOG.md, E1_WRONG_ELEMENT) — real on-screen text grounds tap/longPress targets.
+    @Test
+    fun `a real screen snapshot is folded into the system prompt`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"x","expected":"y","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val screenProvider = ScreenSnapshotProvider { "Wi-Fi toggle [off], Airplane mode [off]" }
+            val agent = PlannerAgent(routerFor(provider), screenSnapshotProvider = screenProvider)
+
+            agent.step(AgentState(goal = "wifi on karo"))
+
+            assertTrue(capturedSystem!!.contains("Wi-Fi toggle [off], Airplane mode [off]"))
+        }
+
+    @Test
+    fun `a null or blank screen snapshot leaves the prompt unchanged`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"x","expected":"y","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val agent = PlannerAgent(routerFor(provider), screenSnapshotProvider = ScreenSnapshotProvider { "   " })
+
+            agent.step(AgentState(goal = "wifi on karo"))
+
+            assertFalse(capturedSystem!!.contains("ACTUALLY visible"))
+        }
+
+    @Test
+    fun `no screenSnapshotProvider at all still plans normally (backwards compatible)`() =
+        runTest {
+            val provider = scriptedProvider(mapOf("wifi on karo" to goals.first().second))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = "wifi on karo"))
+
+            assertTrue(result.plan.isNotEmpty())
+        }
 }

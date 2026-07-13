@@ -165,3 +165,23 @@
   `ResponderAgent`'s post-execution phrasing role) and a decision on how ContextBuilder folds
   recent FACT memories into that path's prompt. Sized bigger than a 2-3 file task — propose as its
   own task once picked up, not built speculatively alongside T-137.
+
+- **Many goals now loop to `AionGraph`'s 30-step circuit breaker instead of resolving or failing
+  fast** — found 2026-07-13 while verifying T-139's real-screen-grounding fix. E1_WRONG_ELEMENT
+  genuinely dropped to zero (T-139's whole point), but ~18 of the 50-task benchmark's failures now
+  have `stepCount` at 32-33 (right at/above the ceiling) and land in `ReflectorAgent`'s "no failures
+  to reflect on" branch — i.e., the graph keeps retrying without ever reaching a stable pass OR a
+  classifiable failure, burning 30+ real LLM round-trips per goal (60-90s latency each) before
+  giving up. Plausible cause: with real screen text now folded into EVERY planning call (T-139),
+  a retry after a partial success might see a *slightly different* screen state each time (e.g.
+  after a toggle flips, or a partial scroll), causing the planner to keep generating a fresh
+  plausible-looking plan that doesn't quite match `StepVerifier`'s exact-text `expected` check,
+  looping instead of converging or giving up. Not fixed here — deliberately out of T-139's own
+  scope (its own AC was "does E1 improve," not "why do other goals loop instead"). Two candidate
+  angles for whoever picks this up: (1) `StepVerifier`'s exact-substring `expected` match may be
+  too strict now that the planner sees real, exact on-screen text and could write `expected` values
+  that are technically-correct-but-differently-worded from what actually appears after the action —
+  worth checking whether fuzzy-matching `expected` the same way `ElementResolver` fuzzy-matches
+  `target` would help; (2) a lower step ceiling *specifically for the same goal retried N times*
+  (distinct from the existing flat 30-step ceiling) might convert a slow loop into an honest,
+  faster UNKNOWN failure without needing to diagnose the root loop cause first.
