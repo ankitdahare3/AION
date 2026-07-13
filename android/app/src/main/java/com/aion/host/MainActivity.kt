@@ -50,6 +50,7 @@ import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.brain.RealApprovalGate
 import com.aion.host.calendar.CalendarScreen
 import com.aion.host.communications.CommunicationsScreen
+import com.aion.host.devicestatus.DeviceStatusScreen
 import com.aion.host.security.AppLockGate
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
@@ -64,7 +65,7 @@ import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -253,6 +254,11 @@ private fun AionApp(
                             Text(if (screen == Screen.COMMUNICATIONS) "Back to Home" else "Communications")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.DEVICE_STATUS) Screen.HOME else Screen.DEVICE_STATUS
+                        }) {
+                            Text(if (screen == Screen.DEVICE_STATUS) "Back to Home" else "Device Status")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -291,6 +297,7 @@ private fun AionApp(
                         Screen.SETUP -> SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))
                         Screen.CALENDAR -> CalendarScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.COMMUNICATIONS -> CommunicationsScreen(resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.DEVICE_STATUS -> DeviceStatusScreen(modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,
