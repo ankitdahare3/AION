@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- EPIC 16 (2026-07-13) — this app has no AppCompat/Material-Components dependency (pure
+     Compose), so the parent must be a plain platform theme, not Theme.Material3.*/Theme.AppCompat.*.
+     `NoActionBar` replaces the old runtime `actionBar?.hide()` workaround (T-116) with the real
+     fix — no action bar is ever created, so nothing can flash into view before it's hidden. Also
+     sets the window background to the real dark color so there's no white flash between the
+     launcher and Compose's first frame. -->
+<resources>
+    <style name="Theme.Aion" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/aion_background</item>
+        <item name="android:statusBarColor">@color/aion_background</item>
+        <item name="android:navigationBarColor">@color/aion_background</item>
+        <item name="android:colorPrimary">@color/aion_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

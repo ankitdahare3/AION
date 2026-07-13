@@ -40,7 +40,8 @@
         android:name=".AionApplication"
         android:allowBackup="false"
         android:label="@string/app_name"
-        android:supportsRtl="true">
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Aion">
 
         <activity
             android:name=".MainActivity"

@@ -4,16 +4,20 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -53,11 +57,12 @@ import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
+import com.aion.host.ui.theme.AionTheme
 import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { SETUP, AUDIT_LOG, API_KEYS, CHAT }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -92,14 +97,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // T-116 finding — no theme in this project sets windowNoTitle, so the platform's default
-        // decor ActionBar renders on top of this fully-Compose UI. Compose content starts at the
-        // window's own y=0 with no inset awareness, so anything within the ActionBar's height is
-        // silently covered by it — invisible AND untappable. Height varies by OEM skin (barely
-        // clipped the button row on stock/emulator, fully hid it on this device's Samsung skin),
-        // which is exactly why it never showed up until now. The app never used the title bar for
-        // anything, so hiding it outright is the fix, not working around it with inset padding.
-        actionBar?.hide()
+        // EPIC 16 (2026-07-13) — T-116's runtime `actionBar?.hide()` workaround is now the real
+        // fix instead: `Theme.Aion` (res/values/themes.xml) is a `NoActionBar` theme, so no action
+        // bar is ever created in the first place — nothing to flash into view before hiding it.
+        enableEdgeToEdge()
         setContent {
             // Antigravity-audit finding, 2026-07-13: this was a plain Activity field
             // (`mutableStateOf`, not `rememberSaveable`), so rotating the device re-created
@@ -137,10 +138,14 @@ class MainActivity : FragmentActivity() {
 @Composable
 private fun LockScreen(onUnlockTap: () -> Unit) {
     LaunchedEffect(Unit) { onUnlockTap() }
-    MaterialTheme {
+    AionTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -167,7 +172,7 @@ private fun AionApp(
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
     // `rememberSaveable` survives that (Screen is a Kotlin enum, inherently Serializable via
     // `java.lang.Enum`, so no custom Saver is needed).
-    var screen by rememberSaveable { mutableStateOf(Screen.SETUP) }
+    var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
     var overlayRunning by rememberSaveable { mutableStateOf(false) }
     var voiceRunning by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -176,10 +181,10 @@ private fun AionApp(
     // always exited the whole app instead of returning to the previous screen. This app is a flat,
     // one-level menu (no screen ever navigates to a third screen), so a full Navigation Compose
     // back-stack would be solving a deeper-hierarchy problem this app doesn't have — going back to
-    // Setup (the de facto home screen) is the correct, minimal fix. Back still exits normally once
-    // already on Setup.
-    BackHandler(enabled = screen != Screen.SETUP) {
-        screen = Screen.SETUP
+    // Home (EPIC 16's real dashboard, replacing Setup as the de facto landing screen) is the
+    // correct, minimal fix. Back still exits normally once already on Home.
+    BackHandler(enabled = screen != Screen.HOME) {
+        screen = Screen.HOME
     }
 
     // T-120 (DOC-017 T4) — block screenshots/screen-recording/recents-thumbnail capture while raw
@@ -192,9 +197,9 @@ private fun AionApp(
         onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
     }
 
-    MaterialTheme {
+    AionTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // T-116 finding — 4 TextButtons with no width constraint overflow a real
                     // phone's screen width (font-scale/density-dependent; never showed up on the
@@ -210,6 +215,14 @@ private fun AionApp(
                                 .padding(8.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
+                        TextButton(onClick = { screen = Screen.HOME }) {
+                            Text("Home")
+                        }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.SETUP) Screen.HOME else Screen.SETUP
+                        }) {
+                            Text(if (screen == Screen.SETUP) "Back to Home" else "Setup")
+                        }
                         TextButton(onClick = {
                             overlayRunning = !overlayRunning
                             val intent = Intent(context, KillSwitchOverlayService::class.java)
@@ -218,14 +231,14 @@ private fun AionApp(
                             Text(if (overlayRunning) "Hide Kill-Switch" else "Show Kill-Switch")
                         }
                         TextButton(onClick = {
-                            screen = if (screen == Screen.API_KEYS) Screen.SETUP else Screen.API_KEYS
+                            screen = if (screen == Screen.API_KEYS) Screen.HOME else Screen.API_KEYS
                         }) {
-                            Text(if (screen == Screen.API_KEYS) "Back to Setup" else "API Keys")
+                            Text(if (screen == Screen.API_KEYS) "Back to Home" else "API Keys")
                         }
                         TextButton(onClick = {
-                            screen = if (screen == Screen.AUDIT_LOG) Screen.SETUP else Screen.AUDIT_LOG
+                            screen = if (screen == Screen.AUDIT_LOG) Screen.HOME else Screen.AUDIT_LOG
                         }) {
-                            Text(if (screen == Screen.AUDIT_LOG) "Back to Setup" else "Audit Log")
+                            Text(if (screen == Screen.AUDIT_LOG) "Back to Home" else "Audit Log")
                         }
                         TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
@@ -234,9 +247,9 @@ private fun AionApp(
                             Text("Explore Device")
                         }
                         TextButton(onClick = {
-                            screen = if (screen == Screen.CHAT) Screen.SETUP else Screen.CHAT
+                            screen = if (screen == Screen.CHAT) Screen.HOME else Screen.CHAT
                         }) {
-                            Text(if (screen == Screen.CHAT) "Back to Setup" else "Talk to AION")
+                            Text(if (screen == Screen.CHAT) "Back to Home" else "Talk to AION")
                         }
                         // T-010 — manual toggle since VoiceSessionManager (T-015) doesn't exist yet
                         // to decide when the FGS should run on its own.
@@ -253,6 +266,14 @@ private fun AionApp(
                         }
                     }
                     when (screen) {
+                        Screen.HOME ->
+                            HomeScreen(
+                                auditLogger,
+                                secretVault,
+                                voiceRunning,
+                                onTapToSpeak = { screen = Screen.CHAT },
+                                modifier = Modifier.weight(1f),
+                            )
                         Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
                         Screen.API_KEYS -> SecretsScreen(secretVault, auditLogger, modifier = Modifier.weight(1f))
                         Screen.SETUP -> SetupWizardScreen(resumeSignal, auditLogger, modifier = Modifier.weight(1f))

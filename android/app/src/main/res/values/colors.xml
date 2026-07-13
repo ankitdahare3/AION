@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Owner-requested premium dark theme, EPIC 16 (2026-07-13) — matches the reference mockup's
+     near-black/glowing-blue palette. Used by both themes.xml (native window background/status
+     bar, so there's no white flash before Compose loads) and AionTheme.kt (the actual Compose
+     color scheme) so the two never drift apart. -->
+<resources>
+    <color name="aion_background">#0A0E1A</color>
+    <color name="aion_surface">#141824</color>
+    <color name="aion_surface_variant">#1C2130</color>
+    <color name="aion_primary">#4A9EFF</color>
+    <color name="aion_on_primary">#0A0E1A</color>
+    <color name="aion_on_background">#F5F6FA</color>
+    <color name="aion_on_surface_muted">#8B92A5</color>
+    <color name="aion_success">#34D399</color>
+    <color name="aion_error">#F87171</color>
+    <color name="aion_outline">#2A3040</color>
+</resources>
