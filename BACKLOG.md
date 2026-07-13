@@ -177,6 +177,19 @@
   benchmark is NOT yet confirmed — needs a real benchmark re-run, not assumed from this fix alone.
   Angle (2) (a per-goal retry ceiling separate from the flat 30-step one) is still open regardless.
 
+  **Update 2026-07-13 (T-158), this bug directly hit live, not just inferred from benchmark stats**:
+  investigating flight-status-via-screen-reading, asked AION (via real chat, real accessibility
+  service enabled and confirmed bound) to open Settings and report Wi-Fi status — a simple,
+  single-screen-navigation goal. It opened the real Settings app correctly, then sat on the
+  Settings home screen for 15+ minutes without ever tapping into "Network & internet" or resolving
+  to a pass/fail. T-156's fuzzy-match fix did NOT prevent this — this run never even reached a
+  `StepVerifier` check with meaningfully different wording; it just never navigated forward at all.
+  Suggests the loop isn't purely a `StepVerifier` wording-mismatch problem (angle 1) — something in
+  the planner's own step-to-step progression can stall with no forward motion and no failure exit.
+  Raises the priority of angle (2) (a per-goal retry ceiling) since a wording fix alone clearly
+  isn't sufficient. Any future roadmap item needing multi-step in-app navigation (flight status,
+  and anything past a single screen) should be expected to hit this until it's fixed.
+
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
   declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup
