@@ -49,40 +49,24 @@ fun SetupWizardScreen(
         statuses = SetupPermission.entries.associateWith { it.isGranted(context) }
     }
 
-    val micPermissionLauncher =
+    // T-152 — was one near-identical `rememberLauncherForActivityResult` per runtime permission;
+    // with a 5th and 6th about to join MICROPHONE/NOTIFICATIONS/CALENDAR, one shared launcher plus
+    // a small "which permission is pending" marker is the same behavior with far less repetition.
+    var pendingPermission by remember { mutableStateOf<SetupPermission?>(null) }
+    val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            statuses = statuses + (SetupPermission.MICROPHONE to granted)
-            scope.launch {
-                auditLogger.record(
-                    "user",
-                    "setup.permission.result",
-                    """{"permission":"MICROPHONE","granted":$granted}""",
-                )
+            val permission = pendingPermission
+            if (permission != null) {
+                statuses = statuses + (permission to granted)
+                scope.launch {
+                    auditLogger.record(
+                        "user",
+                        "setup.permission.result",
+                        """{"permission":"${permission.name}","granted":$granted}""",
+                    )
+                }
             }
-        }
-
-    val notificationsPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            statuses = statuses + (SetupPermission.NOTIFICATIONS to granted)
-            scope.launch {
-                auditLogger.record(
-                    "user",
-                    "setup.permission.result",
-                    """{"permission":"NOTIFICATIONS","granted":$granted}""",
-                )
-            }
-        }
-
-    val calendarPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            statuses = statuses + (SetupPermission.CALENDAR to granted)
-            scope.launch {
-                auditLogger.record(
-                    "user",
-                    "setup.permission.result",
-                    """{"permission":"CALENDAR","granted":$granted}""",
-                )
-            }
+            pendingPermission = null
         }
 
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
@@ -105,12 +89,12 @@ fun SetupWizardScreen(
                                 """{"permission":"${permission.name}"}""",
                             )
                         }
-                        when (permission) {
-                            SetupPermission.MICROPHONE -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            SetupPermission.NOTIFICATIONS ->
-                                notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            SetupPermission.CALENDAR -> calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
-                            else -> permission.settingsIntent(context)?.let { context.startActivity(it) }
+                        val runtimePermission = runtimePermissionFor(permission)
+                        if (runtimePermission != null) {
+                            pendingPermission = permission
+                            permissionLauncher.launch(runtimePermission)
+                        } else {
+                            permission.settingsIntent(context)?.let { context.startActivity(it) }
                         }
                     },
                 )
@@ -119,6 +103,18 @@ fun SetupWizardScreen(
         }
     }
 }
+
+/** Runtime (dialog-based) permissions launch via [rememberLauncherForActivityResult]; everything
+ * else (null here) falls back to [SetupPermission.settingsIntent]. */
+private fun runtimePermissionFor(permission: SetupPermission): String? =
+    when (permission) {
+        SetupPermission.MICROPHONE -> Manifest.permission.RECORD_AUDIO
+        SetupPermission.NOTIFICATIONS -> Manifest.permission.POST_NOTIFICATIONS
+        SetupPermission.CALENDAR -> Manifest.permission.READ_CALENDAR
+        SetupPermission.CALL_LOG -> Manifest.permission.READ_CALL_LOG
+        SetupPermission.SMS -> Manifest.permission.READ_SMS
+        else -> null
+    }
 
 @Composable
 private fun PermissionRow(

@@ -56,6 +56,14 @@ enum class SetupPermission(
         "Calendar",
         "Lets AION show your real events on the Calendar screen (T-151).",
     ),
+    CALL_LOG(
+        "Call log",
+        "Lets AION show your recent calls on the Communications screen (T-152).",
+    ),
+    SMS(
+        "SMS",
+        "Lets AION show your recent messages on the Communications screen (T-152).",
+    ),
     ;
 
     fun isGranted(context: Context): Boolean =
@@ -96,6 +104,12 @@ enum class SetupPermission(
             CALENDAR ->
                 ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
                     PackageManager.PERMISSION_GRANTED
+            CALL_LOG ->
+                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) ==
+                    PackageManager.PERMISSION_GRANTED
+            SMS ->
+                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) ==
+                    PackageManager.PERMISSION_GRANTED
         }
 
     /** Settings screen to resolve this item; null means it's handled another way (adb, or a runtime-permission launcher). */
@@ -114,5 +128,7 @@ enum class SetupPermission(
                     Uri.parse("package:${context.packageName}"),
                 )
             CALENDAR -> null
+            CALL_LOG -> null
+            SMS -> null
         }
 }

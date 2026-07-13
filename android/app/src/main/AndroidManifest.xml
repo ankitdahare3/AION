@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- T-151 (EPIC 17) — real Calendar screen, reads CalendarProvider events the owner already has. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- T-152 (EPIC 17) — real Communications screen (calls + SMS). -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_SMS" />
     <!-- PACKAGE_USAGE_STATS is granted via Settings.ACTION_USAGE_ACCESS_SETTINGS, never a runtime dialog. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
