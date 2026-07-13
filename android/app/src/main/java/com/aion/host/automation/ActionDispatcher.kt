@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.os.Bundle
 import android.view.accessibility.AccessibilityNodeInfo
 import com.aion.host.security.AuditLogger
+import com.aion.host.security.KillSwitch
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
@@ -60,6 +61,7 @@ class ActionDispatcher
     @Inject
     constructor(
         private val auditLogger: AuditLogger,
+        private val killSwitch: KillSwitch,
     ) {
         private val rateLimiter = RateLimiter()
 
@@ -160,6 +162,13 @@ class ActionDispatcher
             payloadJson: String,
             perform: suspend (AionAccessibilityService) -> ActionResult,
         ): ActionResult {
+            // Safety-audit finding, 2026-07-13: KillSwitch.halted was never polled anywhere — SR-03
+            // ("aion stop"/overlay STOP must halt automation <1s) was unenforced. This is the single
+            // funnel every dispatch call (tap/longPress/swipe/type/globalAction/launchApp/
+            // notificationAction) already goes through, so checking here covers all of them.
+            if (killSwitch.halted.value) {
+                return ActionResult.Failure("automation halted by kill switch")
+            }
             val service =
                 AionAccessibilityService.instance
                     ?: return ActionResult.Failure("accessibility service not connected")

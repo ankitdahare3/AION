@@ -1,7 +1,10 @@
 package com.aion.host
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,15 +27,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import android.app.Activity
-import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,7 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import android.widget.Toast
 import com.aion.brain.ProviderRouter
 import com.aion.host.brain.AionGraphFactory
 import com.aion.host.brain.BuiltInPluginRegistry
@@ -58,6 +57,7 @@ import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
 import com.aion.host.security.AuditLogScreen
 import com.aion.host.security.AuditLogger
+import com.aion.host.security.KillSwitch
 import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
@@ -65,8 +65,8 @@ import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.translate.TranslateScreen
 import com.aion.host.ui.theme.AionTheme
 import com.aion.host.usage.UsageStatsScreen
-import com.aion.host.weather.WeatherScreen
 import com.aion.host.voice.VoiceForegroundService
+import com.aion.host.weather.WeatherScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -101,6 +101,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var realApprovalGate: RealApprovalGate
 
+    @Inject
+    lateinit var killSwitch: KillSwitch
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,6 +130,7 @@ class MainActivity : FragmentActivity() {
                     providerRouter,
                     pluginRegistry,
                     realApprovalGate,
+                    killSwitch,
                 )
             } else {
                 LockScreen(onUnlockTap = {
@@ -175,6 +179,7 @@ private fun AionApp(
     providerRouter: ProviderRouter,
     pluginRegistry: BuiltInPluginRegistry,
     realApprovalGate: RealApprovalGate,
+    killSwitch: KillSwitch,
 ) {
     // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
@@ -344,6 +349,7 @@ private fun AionApp(
                                 providerRouter,
                                 pluginRegistry.manager,
                                 realApprovalGate,
+                                killSwitch,
                                 modifier = Modifier.weight(1f),
                             )
                     }

@@ -36,8 +36,9 @@ import com.aion.brain.ApprovalGate
 import com.aion.brain.PluginManager
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ResponsePhrasing
-import java.util.Locale
+import com.aion.host.security.KillSwitch
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * T-118 — the first way to actually give AION a goal from the app itself, since voice (EPIC 2)
@@ -69,6 +70,7 @@ fun ChatScreen(
     router: ProviderRouter,
     pluginManager: PluginManager,
     approvalGate: ApprovalGate,
+    killSwitch: KillSwitch,
     modifier: Modifier = Modifier,
 ) {
     // Antigravity-audit finding, 2026-07-13: this was `remember`, so rotating the device or
@@ -126,10 +128,20 @@ fun ChatScreen(
                     running = true
                     response = null
                     scope.launch {
-                        val graph = graphFactory.create(router, pluginManager, approvalGate)
-                        val result = graph.run(AgentState(goal = goal))
-                        response = result.response
-                        running = false
+                        try {
+                            // Safety-audit finding, 2026-07-13: a prior "aion stop"/overlay trigger
+                            // left KillSwitch.halted permanently true (nothing ever called reset()),
+                            // which would silently block every automation step of every future run.
+                            // Starting a new run is the owner's own signal that it's safe to resume.
+                            killSwitch.reset()
+                            val graph = graphFactory.create(router, pluginManager, approvalGate)
+                            val result = graph.run(AgentState(goal = goal))
+                            response = result.response
+                        } catch (e: Exception) {
+                            response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
+                        } finally {
+                            running = false
+                        }
                     }
                 },
                 enabled = goal.isNotBlank() && !running,
