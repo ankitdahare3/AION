@@ -1,5 +1,7 @@
 package com.aion.host.automation
 
+import com.aion.brain.TextSimilarity
+
 enum class VerificationOutcome { PASS, FAIL, AMBIGUOUS }
 
 data class VerificationResult(
@@ -25,9 +27,17 @@ object StepVerifier {
         val expectedNorm = expected.trim().lowercase()
         val changed = after.lowercase() != before.lowercase()
 
+        val bestMatch = if (expectedNorm.isNotEmpty()) {
+            after.lines().maxOfOrNull { line ->
+                TextSimilarity.similarity(expectedNorm, line)
+            } ?: 0.0
+        } else {
+            0.0
+        }
+
         return when {
-            expectedNorm.isNotEmpty() && after.lowercase().contains(expectedNorm) ->
-                VerificationResult(VerificationOutcome.PASS, 0.95, "expected text found in post-action screen")
+            expectedNorm.isNotEmpty() && (after.lowercase().contains(expectedNorm) || bestMatch >= CONFIDENCE_THRESHOLD) ->
+                VerificationResult(VerificationOutcome.PASS, maxOf(0.95, bestMatch), "expected text found in post-action screen")
             !changed ->
                 VerificationResult(VerificationOutcome.FAIL, 0.9, "screen did not change after the action")
             else ->

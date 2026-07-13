@@ -171,6 +171,12 @@
   (distinct from the existing flat 30-step ceiling) might convert a slow loop into an honest,
   faster UNKNOWN failure without needing to diagnose the root loop cause first.
 
+  **Update 2026-07-13 (T-156)**: candidate angle (1) is now implemented — `StepVerifier.verify`
+  fuzzy-matches `expected` against post-action text via `TextSimilarity`, not just an exact
+  substring. Unit-tested, but whether it actually reduces the real 30-step-loop rate on the 50-task
+  benchmark is NOT yet confirmed — needs a real benchmark re-run, not assumed from this fix alone.
+  Angle (2) (a per-goal retry ceiling separate from the flat 30-step one) is still open regardless.
+
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
   declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup
@@ -195,3 +201,16 @@
   `WAKE_THRESHOLD`/`WAKE_DEBOUNCE_MS` are hardcoded. Fine for now (no UI surface asks for this yet,
   and the real "AION" model from T-012 will need its own calibrated threshold anyway once trained
   on real false-accept data) — revisit once T-012's `<1 false-accept/hr` AC needs a knob to tune.
+
+- **Proactive Suggestions doesn't cover "download completed" or "mail needs a reply"** — found
+  2026-07-13 during T-155. The mockup's other two suggestion types aren't buildable honestly today:
+  `DownloadManager.query()` without `ACCESS_DOWNLOAD_MANAGER` (a system-signature permission we
+  can't hold) only returns downloads this app itself initiated, not other apps' — no path to see a
+  real cross-app download event. "Does this mail need a reply" needs actual content classification,
+  not a threshold check like the other three signals. Revisit if a real signal for either becomes
+  available (e.g. a notification-listener-based download heuristic instead of `DownloadManager`).
+
+- **`ProactiveSuggestionEngine` thresholds are fixed constants, not owner-tunable** — found
+  2026-07-13 during T-155. 20% battery / 15min lookahead / 2h screen time are hardcoded. Same
+  category as the wake-word thresholds above — fine until someone's actual routine shows the
+  defaults are wrong, add a settings surface then, not preemptively.

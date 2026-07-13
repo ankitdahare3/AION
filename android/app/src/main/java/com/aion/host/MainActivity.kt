@@ -51,6 +51,7 @@ import com.aion.host.brain.RealApprovalGate
 import com.aion.host.calendar.CalendarScreen
 import com.aion.host.communications.CommunicationsScreen
 import com.aion.host.devicestatus.DeviceStatusScreen
+import com.aion.host.proactive.ProactiveSuggestionsScreen
 import com.aion.host.security.AppLockGate
 import com.aion.host.security.ApprovalGateService
 import com.aion.host.security.ApprovalSheetHost
@@ -66,7 +67,7 @@ import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS, PROACTIVE }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -265,6 +266,11 @@ private fun AionApp(
                             Text(if (screen == Screen.USAGE_STATS) "Back to Home" else "App Usage")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.PROACTIVE) Screen.HOME else Screen.PROACTIVE
+                        }) {
+                            Text(if (screen == Screen.PROACTIVE) "Back to Home" else "Suggestions")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -305,6 +311,12 @@ private fun AionApp(
                         Screen.COMMUNICATIONS -> CommunicationsScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.DEVICE_STATUS -> DeviceStatusScreen(modifier = Modifier.weight(1f))
                         Screen.USAGE_STATS -> UsageStatsScreen(resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.PROACTIVE ->
+                            ProactiveSuggestionsScreen(
+                                resumeSignal,
+                                onOpenCalendar = { screen = Screen.CALENDAR },
+                                modifier = Modifier.weight(1f),
+                            )
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,

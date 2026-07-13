@@ -45,4 +45,14 @@ class StepVerifierTest {
         assertEquals(VerificationOutcome.FAIL, unchanged.outcome)
         assertEquals(VerificationOutcome.AMBIGUOUS, changed.outcome)
     }
+
+    @Test
+    fun `pass when expected text is fuzzy matched in post-action screen`() {
+        // "Wi-Fi is ON" vs "Wi-Fi: ON" (will be stripped to "wifiison" vs "wifion" by TextSimilarity which scores > 0.7)
+        val result = StepVerifier.verify("Wi-Fi is ON", before = "Settings home", after = "Wi-Fi: ON")
+
+        assertEquals(VerificationOutcome.PASS, result.outcome)
+        assertFalse(StepVerifier.needsReflection(result))
+    }
 }
+
