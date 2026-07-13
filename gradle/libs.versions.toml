@@ -41,6 +41,9 @@ androidxSqlite = "2.4.0"
 # the Devanagari model (com.google.mlkit:text-recognition-devanagari) is a separate dependency,
 # deferred until there's a real Hindi-text golden fixture to test it against (BACKLOG.md).
 mlkitTextRecognition = "16.0.1"
+# ML Kit Translate (T-161/EPIC 17): fully on-device, no API key/signup — the owner's own "focus
+# mostly free" choice over a cloud translation API. Downloads per-language models on first use.
+mlkitTranslate = "17.0.3"
 # BiometricPrompt compat wrapper (T-138, DOC-017 §5 T6). 1.1.0 is the current stable release.
 biometric = "1.1.0"
 # ONNX Runtime Mobile (T-011, DOC-011 §1): ships prebuilt per-ABI native libs inside the AAR itself —
@@ -66,6 +69,7 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
@@ -82,6 +86,7 @@ shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuk
 sqlcipher-android = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
 androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "androidxSqlite" }
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 
