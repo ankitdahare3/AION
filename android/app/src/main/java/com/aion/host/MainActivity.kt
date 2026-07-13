@@ -61,11 +61,12 @@ import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.ui.theme.AionTheme
+import com.aion.host.usage.UsageStatsScreen
 import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS }
+private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS }
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.
@@ -259,6 +260,11 @@ private fun AionApp(
                             Text(if (screen == Screen.DEVICE_STATUS) "Back to Home" else "Device Status")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.USAGE_STATS) Screen.HOME else Screen.USAGE_STATS
+                        }) {
+                            Text(if (screen == Screen.USAGE_STATS) "Back to Home" else "App Usage")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -298,6 +304,7 @@ private fun AionApp(
                         Screen.CALENDAR -> CalendarScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.COMMUNICATIONS -> CommunicationsScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.DEVICE_STATUS -> DeviceStatusScreen(modifier = Modifier.weight(1f))
+                        Screen.USAGE_STATS -> UsageStatsScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,
