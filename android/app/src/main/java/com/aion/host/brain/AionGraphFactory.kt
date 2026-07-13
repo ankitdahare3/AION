@@ -2,7 +2,9 @@ package com.aion.host.brain
 
 import com.aion.brain.AionGraph
 import com.aion.brain.ApprovalGate
+import com.aion.brain.ChatAgent
 import com.aion.brain.ExecutorAgent
+import com.aion.brain.IntentRoutingAgent
 import com.aion.brain.MemoryStore
 import com.aion.brain.MemoryWriterAgent
 import com.aion.brain.PlannerAgent
@@ -31,6 +33,13 @@ import javax.inject.Singleton
  * already captures, so bouncing through an extra graph hop just to re-run a comparison on the same
  * two strings has no benefit. `ExecutorAgent` itself (T-077) no longer calls any dispatcher
  * directly — it routes exclusively through [PluginManager].
+ *
+ * T-150 (BACKLOG.md, found during T-130/T-137) — the "planner" node is now [IntentRoutingAgent],
+ * not a bare [PlannerAgent]: it classifies the goal first and diverts CHAT-intent goals (a plain
+ * greeting, small talk) to a real [ChatAgent] conversational reply instead of planning a device
+ * action for them. Safe against `AionGraph`'s frozen `run()` loop without touching `route()` at
+ * all — [ChatAgent] sets `done=true` on its very first step, and `run()`'s `while (... && !s.done)`
+ * check exits before `route("planner", s)`'s unconditional "executor" next-hop is ever used.
  */
 @Singleton
 class AionGraphFactory
@@ -49,10 +58,14 @@ class AionGraphFactory
                 nodes =
                     mapOf(
                         "planner" to
-                            PlannerAgent(
-                                router,
-                                memoryStore = memoryStore,
-                                screenSnapshotProvider = screenSnapshotProvider,
+                            IntentRoutingAgent(
+                                chat = ChatAgent(router),
+                                planner =
+                                    PlannerAgent(
+                                        router,
+                                        memoryStore = memoryStore,
+                                        screenSnapshotProvider = screenSnapshotProvider,
+                                    ),
                             ),
                         "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(),

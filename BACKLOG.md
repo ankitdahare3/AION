@@ -138,33 +138,18 @@
   T-114's own scope note) is reading those PROFILE memories back into `PlannerAgent`'s context so it
   can pick a real installed package instead of guessing an AOSP one.
 
-- **A plain greeting can get planned as a device-automation task instead of a chat reply** — found
-  during T-130's live chat-screen verification: the goal "Namaste AION" (a pure US1 greeting, no
-  action implied) produced a real multi-step plan that opened Settings and asked to tap
-  "Auto-rotate". `IntentClassifier` (T-033, still the v1 keyword/pattern heuristic) is the likely
-  culprit — a short greeting with no action verb has few tokens to classify on and may be
-  defaulting to SIMPLE_ACTION/MULTI_STEP rather than CHAT. Not fixed inline here (T-130's own scope
-  was verifying the chat screen and the denial-response bug it exposed, not planner-classification
-  accuracy) — worth a dedicated look once IntentClassifier's real-LLM upgrade (already tracked
-  above, blocked on T-032) lands, or sooner if it recurs during T-131's benchmark re-run: check
-  whether any of the 50 benchmark goals are pure-chat phrasing being misclassified the same way.
-
-- **`IntentClassifier` (T-033) is built but never wired into the live `AionGraphFactory` graph** —
-  found 2026-07-12 while trying to verify T-137's AC ("a chat question about the latest
-  notification" should surface it). The graph always routes every goal straight through
-  `PlannerAgent`, which only ever produces a tap/launchApp/globalAction plan — there is no
-  conversational/CHAT path at all today, regardless of what IntentClassifier would say. This is the
-  exact same root cause as the "Namaste AION" greeting getting planned as a Settings-automation
-  task (found during T-130's live verification, noted above). It also means no goal has any path to
-  answer a factual question from memory: `PlannerAgent.withKnownApps` (T-117) only ever folds
-  `PROFILE` memories into the ACTION-planning prompt, never a conversational response. Wiring
-  IntentClassifier into the graph — routing CHAT-classified goals to a real conversational
-  node/path that can read recent memories (including T-137's new notification-sourced FACT
-  memories) and answer in natural language — is real, scoped work: touches `AionGraphFactory`'s
-  node map and routing closure, likely needs a new `Agent` (a "chat responder" distinct from
-  `ResponderAgent`'s post-execution phrasing role) and a decision on how ContextBuilder folds
-  recent FACT memories into that path's prompt. Sized bigger than a 2-3 file task — propose as its
-  own task once picked up, not built speculatively alongside T-137.
+- ~~**A plain greeting can get planned as a device-automation task instead of a chat reply**~~ —
+  **RESOLVED 2026-07-13 (T-150)**: `IntentRoutingAgent` now sits in the graph's "planner" slot,
+  classifying via `IntentClassifier` and diverting CHAT-intent goals to a new `ChatAgent` (real
+  `ProviderRouter` CHAT call) instead of planning a device action for them. Live-verified: "Namaste
+  AION" now gets a real conversational reply ("Namaste, kaise ho aap?"), while "wifi on karo" still
+  correctly reaches the real automation path. See TASKS.md EPIC 17.
+  Still open, deliberately not part of T-150's scope: `PlannerAgent.withKnownApps` (T-117) still
+  only folds `PROFILE` memories into the ACTION-planning prompt — `ChatAgent` doesn't read any
+  memories yet either, so a factual question ("what was that HR mail about?") still won't get a
+  memory-grounded answer, just a generic LLM reply. That's real follow-up work, not built
+  speculatively here — needs a decision on how ContextBuilder folds recent FACT/notification
+  memories into ChatAgent's prompt.
 
 - **Many goals now loop to `AionGraph`'s 30-step circuit breaker instead of resolving or failing
   fast** — found 2026-07-13 while verifying T-139's real-screen-grounding fix. E1_WRONG_ELEMENT
