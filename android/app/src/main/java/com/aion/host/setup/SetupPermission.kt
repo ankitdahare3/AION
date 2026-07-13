@@ -44,6 +44,10 @@ enum class SetupPermission(
         "Microphone",
         "Needed for the wake word and voice commands.",
     ),
+    NOTIFICATIONS(
+        "Notifications",
+        "Needed so AION's voice-listening status is visible (T-010, Android 13+).",
+    ),
     BATTERY_OPTIMIZATION(
         "Ignore battery optimization",
         "Keeps AION's services alive in the background.",
@@ -76,6 +80,11 @@ enum class SetupPermission(
             MICROPHONE ->
                 ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                     PackageManager.PERMISSION_GRANTED
+            // Below API 33 this permission doesn't gate anything — checkSelfPermission returns
+            // GRANTED automatically on those devices, which is the correct backward-compatible answer.
+            NOTIFICATIONS ->
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
             BATTERY_OPTIMIZATION -> {
                 val pm = context.getSystemService(PowerManager::class.java)
                 pm?.isIgnoringBatteryOptimizations(context.packageName) == true
@@ -91,6 +100,7 @@ enum class SetupPermission(
             USAGE_ACCESS -> Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             OVERLAY -> Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
             MICROPHONE -> null
+            NOTIFICATIONS -> null
             BATTERY_OPTIMIZATION ->
                 Intent(
                     Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,

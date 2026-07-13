@@ -15,6 +15,15 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- T-010 (DOC-011 §2/§4) — VoiceForegroundService is a real always-open microphone stream
+         (openWakeWord/T-011 isn't built yet, so it reads and discards for now — see the service's
+         own KDoc), so it genuinely needs both the FGS permission and its microphone sub-type
+         (API 34+ requires declaring the specific type, not just the general one) plus
+         POST_NOTIFICATIONS (API 33+) for its own foreground-service notification to be visible. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- T-121 finding — API 30+ package-visibility filtering made getLaunchIntentForPackage()
          (ActionDispatcher.launchApp, T-041) return null for nearly every installed app, including
          correct, present packages like com.google.android.youtube; latent since T-041 because
@@ -67,6 +76,11 @@
         <service
             android:name=".security.KillSwitchOverlayService"
             android:exported="false" />
+
+        <service
+            android:name=".voice.VoiceForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <service
             android:name=".automation.AionAccessibilityService"

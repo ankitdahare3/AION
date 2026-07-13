@@ -185,3 +185,14 @@
   `target` would help; (2) a lower step ceiling *specifically for the same goal retried N times*
   (distinct from the existing flat 30-step ceiling) might convert a slow loop into an honest,
   faster UNKNOWN failure without needing to diagnose the root loop cause first.
+
+- **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
+  while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
+  declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup
+  wizard's Accessibility row permanently shows "Grant" even after the owner actually enables it in
+  Settings. The real check should mirror `NOTIFICATION_ACCESS`'s own pattern: read
+  `Settings.Secure.ACCESSIBILITY_ENABLED` + `enabled_accessibility_services` and check for
+  `AionAccessibilityService`'s component name, same as `enabled_notification_listeners` already
+  does for `AionNotificationListener`. Not fixed inline — out of scope for the task being worked on
+  when found, and touching the setup wizard's own permission-status logic deserves its own
+  isolated verification pass rather than a drive-by edit.

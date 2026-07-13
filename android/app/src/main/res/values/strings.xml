@@ -4,4 +4,7 @@
     <string name="device_admin_label">AION Device Owner</string>
     <string name="device_admin_description">Lets AION run persistently and manage its own permissions on this dedicated device. Never used to hide activity from you (DOC-016 §3).</string>
     <string name="accessibility_service_description">Lets AION read screen content (as structured text, never as instructions) so it can automate apps on your behalf. It only acts after your explicit approval.</string>
+    <string name="voice_notification_channel">AION Voice</string>
+    <string name="voice_notification_title">AION is listening</string>
+    <string name="voice_notification_text">Microphone is active for wake-word detection.</string>
 </resources>

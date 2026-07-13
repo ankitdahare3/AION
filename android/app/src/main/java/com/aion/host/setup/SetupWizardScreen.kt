@@ -61,6 +61,18 @@ fun SetupWizardScreen(
             }
         }
 
+    val notificationsPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            statuses = statuses + (SetupPermission.NOTIFICATIONS to granted)
+            scope.launch {
+                auditLogger.record(
+                    "user",
+                    "setup.permission.result",
+                    """{"permission":"NOTIFICATIONS","granted":$granted}""",
+                )
+            }
+        }
+
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Text("AION Setup", style = MaterialTheme.typography.headlineSmall)
         Text(
@@ -81,10 +93,11 @@ fun SetupWizardScreen(
                                 """{"permission":"${permission.name}"}""",
                             )
                         }
-                        if (permission == SetupPermission.MICROPHONE) {
-                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        } else {
-                            permission.settingsIntent(context)?.let { context.startActivity(it) }
+                        when (permission) {
+                            SetupPermission.MICROPHONE -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            SetupPermission.NOTIFICATIONS ->
+                                notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            else -> permission.settingsIntent(context)?.let { context.startActivity(it) }
                         }
                     },
                 )

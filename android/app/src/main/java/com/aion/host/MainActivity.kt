@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import com.aion.brain.ProviderRouter
@@ -50,6 +51,7 @@ import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
+import com.aion.host.voice.VoiceForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -162,6 +164,7 @@ private fun AionApp(
 ) {
     var screen by remember { mutableStateOf(Screen.SETUP) }
     var overlayRunning by remember { mutableStateOf(false) }
+    var voiceRunning by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // T-120 (DOC-017 T4) — block screenshots/screen-recording/recents-thumbnail capture while raw
@@ -219,6 +222,19 @@ private fun AionApp(
                             screen = if (screen == Screen.CHAT) Screen.SETUP else Screen.CHAT
                         }) {
                             Text(if (screen == Screen.CHAT) "Back to Setup" else "Talk to AION")
+                        }
+                        // T-010 — manual toggle since VoiceSessionManager (T-015) doesn't exist yet
+                        // to decide when the FGS should run on its own.
+                        TextButton(onClick = {
+                            voiceRunning = !voiceRunning
+                            val intent = Intent(context, VoiceForegroundService::class.java)
+                            if (voiceRunning) {
+                                ContextCompat.startForegroundService(context, intent)
+                            } else {
+                                context.stopService(intent)
+                            }
+                        }) {
+                            Text(if (voiceRunning) "Stop Voice" else "Start Voice")
                         }
                     }
                     when (screen) {
