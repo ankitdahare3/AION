@@ -105,8 +105,10 @@ fun SetupWizardScreen(
 }
 
 /** Runtime (dialog-based) permissions launch via [rememberLauncherForActivityResult]; everything
- * else (null here) falls back to [SetupPermission.settingsIntent]. */
-private fun runtimePermissionFor(permission: SetupPermission): String? =
+ * else (null here) falls back to [SetupPermission.settingsIntent]. `internal` (not `private`) so
+ * this mapping is unit-testable without a device, same as `CalendarReader.dayRangeMs`/`DeviceStatusReader`'s
+ * pure helpers. */
+internal fun runtimePermissionFor(permission: SetupPermission): String? =
     when (permission) {
         SetupPermission.MICROPHONE -> Manifest.permission.RECORD_AUDIO
         SetupPermission.NOTIFICATIONS -> Manifest.permission.POST_NOTIFICATIONS
