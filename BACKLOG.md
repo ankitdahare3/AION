@@ -214,3 +214,14 @@
   2026-07-13 during T-155. 20% battery / 15min lookahead / 2h screen time are hardcoded. Same
   category as the wake-word thresholds above — fine until someone's actual routine shows the
   defaults are wrong, add a settings surface then, not preemptively.
+
+- **`aion_test` AVD's `content://sms` provider accepts `adb emu sms send` but refuses shell-side
+  deletes/clears** — found 2026-07-13 during T-157's live-verification. Unlike T-152's finding
+  (raw `content insert` silently no-ops), `adb emu sms send <sender> <body>` genuinely delivers a
+  real SMS through the emulator's simulated modem — the mechanism to use for any future SMS live-
+  verification on this AVD. But cleaning up afterward failed every way tried: `content delete`
+  (both a WHERE clause and per-row `content://sms/<id>` URIs) and `pm clear` on both
+  `com.android.providers.telephony` and `com.google.android.apps.messaging` (even after
+  `am force-stop`) all silently no-op'd. 3 fake test SMS (Amazon/Swiggy/Salary, harmless amounts)
+  are left sitting on this AVD as a result — expect them present in any future SMS query on
+  `emulator-5554` until someone finds the right cleanup incantation or the AVD gets recreated.
