@@ -22,6 +22,21 @@ import javax.inject.Singleton
  * within 5s on multiple real devices/emulators even when the tap visibly worked), so a `Failure`
  * from the dispatcher is treated as inconclusive rather than a hard failure whenever the screen
  * diff independently confirms the expected outcome happened anyway.
+ *
+ * T-165 (BACKLOG.md, the last open thread from T-158/T-162/T-163/T-164's 30-step-loop
+ * investigation) — `success` used to be `result is ActionResult.Success || verification.outcome ==
+ * PASS`, which only implements HALF of the rule this doc already states: it correctly rescues a
+ * dispatcher `Failure` when the screen diff confirms success anyway, but it ALSO let a dispatcher
+ * `Success` silently override a `StepVerifier` outcome that was NOT `PASS` — the reverse direction,
+ * never documented or intended. `ActionResult.Success` for every action type (`tap`/`longPress`/
+ * `launchApp`, confirmed by reading `ActionDispatcher` directly) means only "no system-level
+ * exception was thrown" — a raw gesture at the wrong coordinates (a mis-resolved element) or a
+ * `launchApp` whose `startActivity` didn't throw still reports `Success` regardless of whether the
+ * intended outcome actually happened. That let a wrong-element tap silently count as a real success
+ * — `currentStep` would advance and `ReflectorAgent`/`FewShotBank` would never even see it — instead
+ * of the `E1_WRONG_ELEMENT`/`E2_UI_CHANGED` failure it actually was. Now `success` is exactly
+ * `verification.outcome == PASS`; a dispatcher `Failure` no longer needs special-casing to be
+ * "rescued" by verification since that's just the default case already.
  */
 @Singleton
 class DispatcherActionExecutor
@@ -76,7 +91,7 @@ class DispatcherActionExecutor
             delay(DEBOUNCE_MS) // DOC-009 §4 — let the UI settle before capturing the post-action diff
             val after = service.currentScreenText().orEmpty()
             val verification = StepVerifier.verify(step.expected, before, after)
-            val success = result is ActionResult.Success || verification.outcome == VerificationOutcome.PASS
+            val success = verification.outcome == VerificationOutcome.PASS
             return ExecutionOutcome(
                 success = success,
                 observation = after,

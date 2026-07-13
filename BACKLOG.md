@@ -215,6 +215,22 @@
   `FewShotBank` get skipped entirely. Needs real instrumentation/logging to confirm either way —
   not done here, left honestly open rather than assumed.
 
+  **Update 2026-07-13 (T-165) — that last open thread, chased down and confirmed real**:
+  `DispatcherActionExecutor`'s `success = result is ActionResult.Success || verification.outcome
+  == PASS` only implemented half its own documented rule — a dispatcher `Success` (which just means
+  "no system exception," confirmed by reading `ActionDispatcher` directly, never "hit the intended
+  element") could silently override a `StepVerifier` outcome that wasn't `PASS`, letting a
+  wrong-element tap count as success and skip `ReflectorAgent`/`FewShotBank` entirely. Fixed:
+  `success` is now exactly `verification.outcome == PASS`. Live re-test of the same stuck scenario
+  a 4th time was inconclusive (didn't resolve in ~10 minutes, unlike T-163's clean <75s result) —
+  genuinely unclear if that's real LLM-latency variance or something else; not chased further after
+  4 live attempts on one scenario. This closes all four scoped follow-ups from T-158's original
+  finding (T-162/T-163/T-164/T-165). **Not claiming the loop phenomenon is eliminated** — it's
+  meaningfully better-understood and every real gap found along the way is genuinely fixed and
+  tested, but confirming the aggregate real-world improvement needs a proper benchmark re-run
+  (T-121-style), not more one-off manual live pokes at a single scenario. Whoever picks this up
+  next should start there.
+
 - **`SetupPermission.ACCESSIBILITY.isGranted()` is hardcoded to `false` forever** — found 2026-07-13
   while touching `SetupPermission.kt` for T-010. The comment says "No AccessibilityService is
   declared yet (ships in T-040)", but T-040 shipped `AionAccessibilityService` long ago — the setup
