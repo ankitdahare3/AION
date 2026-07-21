@@ -48,22 +48,28 @@ class BuiltInPluginRegistry
     ) {
         val manager = PluginManager(approvalGate)
 
+        /** T-168 (About AION screen) — real count of what's actually registered below, not a second hardcoded number. */
+        val registeredPluginCount: Int
+
         init {
-            listOf(
-                SystemPlugin(executor),
-                ContactsPlugin(executor),
-                PhoneSmsPlugin(executor),
-                CalendarPlugin(executor),
-                FilesPlugin(executor),
-                BrowserPlugin(executor),
-                GmailPlugin(gmailToken),
-                TelegramPlugin(telegramToken),
-            ).forEach {
+            val namedBuiltIns =
+                listOf(
+                    SystemPlugin(executor),
+                    ContactsPlugin(executor),
+                    PhoneSmsPlugin(executor),
+                    CalendarPlugin(executor),
+                    FilesPlugin(executor),
+                    BrowserPlugin(executor),
+                    GmailPlugin(gmailToken),
+                    TelegramPlugin(telegramToken),
+                )
+            namedBuiltIns.forEach {
                 manager.register(it)
                 manager.enable(it.manifest.id)
             }
 
             manager.register(UIAutomationPlugin(executor))
             manager.enable(UIAutomationPlugin.ID)
+            registeredPluginCount = namedBuiltIns.size + 1
         }
     }

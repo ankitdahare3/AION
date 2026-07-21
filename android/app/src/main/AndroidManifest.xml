@@ -7,6 +7,9 @@
          the dangerous/special permissions below. Needed for ProviderRouter's real cloud calls
          (T-030/DOC-013) and the Gmail/Telegram plugins (T-102); genuinely never used before now. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- T-168 (Offline Mode screen) — ConnectivityManager.getNetworkCapabilities needs this
+         declared even though it's a normal, install-time-granted permission. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />

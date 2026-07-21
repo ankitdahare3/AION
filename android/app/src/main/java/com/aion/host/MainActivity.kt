@@ -46,7 +46,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.aion.brain.MemoryStore
 import com.aion.brain.ProviderRouter
+import com.aion.host.about.AboutScreen
+import com.aion.host.about.OfflineStatusScreen
 import com.aion.host.brain.AionGraphFactory
 import com.aion.host.brain.BuiltInPluginRegistry
 import com.aion.host.brain.ChatScreen
@@ -56,6 +59,8 @@ import com.aion.host.calendar.CalendarScreen
 import com.aion.host.communications.CommunicationsScreen
 import com.aion.host.devicestatus.DeviceStatusScreen
 import com.aion.host.finance.FinanceScreen
+import com.aion.host.memory.MemoryTimelineScreen
+import com.aion.host.notifications.NotificationsScreen
 import com.aion.host.proactive.ProactiveSuggestionsScreen
 import com.aion.host.security.AppLockGate
 import com.aion.host.security.ApprovalGateService
@@ -91,6 +96,10 @@ private enum class Screen {
     FINANCE,
     WEATHER,
     TRANSLATE,
+    ABOUT,
+    OFFLINE_STATUS,
+    MEMORY_TIMELINE,
+    NOTIFICATIONS,
 }
 
 /**
@@ -125,6 +134,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var killSwitch: KillSwitch
 
+    @Inject
+    lateinit var memoryStore: MemoryStore
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,6 +164,7 @@ class MainActivity : FragmentActivity() {
                     pluginRegistry,
                     realApprovalGate,
                     killSwitch,
+                    memoryStore,
                 )
             } else {
                 LockScreen(onUnlockTap = {
@@ -201,6 +214,7 @@ private fun AionApp(
     pluginRegistry: BuiltInPluginRegistry,
     realApprovalGate: RealApprovalGate,
     killSwitch: KillSwitch,
+    memoryStore: MemoryStore,
 ) {
     // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
@@ -315,6 +329,26 @@ private fun AionApp(
                             Text(if (screen == Screen.TRANSLATE) "Back to Home" else "Translate")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.ABOUT) Screen.HOME else Screen.ABOUT
+                        }) {
+                            Text(if (screen == Screen.ABOUT) "Back to Home" else "About")
+                        }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.OFFLINE_STATUS) Screen.HOME else Screen.OFFLINE_STATUS
+                        }) {
+                            Text(if (screen == Screen.OFFLINE_STATUS) "Back to Home" else "Connectivity")
+                        }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.MEMORY_TIMELINE) Screen.HOME else Screen.MEMORY_TIMELINE
+                        }) {
+                            Text(if (screen == Screen.MEMORY_TIMELINE) "Back to Home" else "Memory")
+                        }
+                        TextButton(onClick = {
+                            screen = if (screen == Screen.NOTIFICATIONS) Screen.HOME else Screen.NOTIFICATIONS
+                        }) {
+                            Text(if (screen == Screen.NOTIFICATIONS) "Back to Home" else "Notifications")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -364,6 +398,17 @@ private fun AionApp(
                         Screen.FINANCE -> FinanceScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.WEATHER -> WeatherScreen(resumeSignal, modifier = Modifier.weight(1f))
                         Screen.TRANSLATE -> TranslateScreen(modifier = Modifier.weight(1f))
+                        Screen.ABOUT ->
+                            AboutScreen(
+                                secretVault,
+                                pluginRegistry.registeredPluginCount,
+                                modifier = Modifier.weight(1f),
+                            )
+                        Screen.OFFLINE_STATUS -> OfflineStatusScreen(modifier = Modifier.weight(1f))
+                        Screen.MEMORY_TIMELINE ->
+                            MemoryTimelineScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.NOTIFICATIONS ->
+                            NotificationsScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,
@@ -375,10 +420,9 @@ private fun AionApp(
                             )
                     }
                     // T-168 — the persistent glass bottom bar + glowing mic orb every Stitch mockup
-                    // screen shares. Wired to the 5 real screens closest to the mockup's own 5 icons
-                    // rather than the mockup's literal (often fantasy) icon set — Files/Notifications
-                    // don't have dedicated real screens yet, so this points at the closest genuine
-                    // equivalents (Setup as a utility hub, Audit Log as the real activity feed).
+                    // screen shares. Wired to the 5 real screens closest to the mockup's own 5
+                    // icons rather than the mockup's literal (often fantasy) icon set — Setup
+                    // doubles as the "Apps" utility hub since Files has no dedicated real screen yet.
                     AionBottomNav(
                         left =
                             listOf(
@@ -394,8 +438,8 @@ private fun AionApp(
                                 AionNavItem(
                                     Icons.Filled.Notifications,
                                     "Alerts",
-                                    screen == Screen.AUDIT_LOG,
-                                ) { screen = Screen.AUDIT_LOG },
+                                    screen == Screen.NOTIFICATIONS,
+                                ) { screen = Screen.NOTIFICATIONS },
                                 AionNavItem(
                                     Icons.Filled.Settings,
                                     "Settings",
