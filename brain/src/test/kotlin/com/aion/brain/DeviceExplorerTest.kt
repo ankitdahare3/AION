@@ -52,7 +52,13 @@ class DeviceExplorerTest {
         val memories = DeviceExplorer.buildProfileMemories(scans, nowMs = 2000L)
 
         assertEquals(2, memories.size)
-        assertEquals(setOf("com.android.settings", "com.whatsapp"), memories.map { it.text.substringAfter("App ").substringBefore(":") }.toSet())
+        assertEquals(
+            setOf("com.android.settings", "com.whatsapp"),
+            memories
+                .map {
+                    it.text.substringAfter("App ").substringBefore(":")
+                }.toSet(),
+        )
     }
 
     @Test

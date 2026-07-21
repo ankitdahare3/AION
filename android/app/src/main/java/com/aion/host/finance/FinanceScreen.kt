@@ -80,7 +80,11 @@ fun FinanceScreen(
 private fun TransactionRow(txn: SmsTransaction) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(txn.merchant ?: txn.category.name, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
+            Text(
+                txn.merchant ?: txn.category.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AionColors.OnBackground,
+            )
             Text(
                 dateTimeFormat.format(Date(txn.timestampMs)),
                 style = MaterialTheme.typography.bodySmall,

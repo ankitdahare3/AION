@@ -74,7 +74,7 @@ object ProvidersModule {
             secretVault.get(ProviderKey.GEMINI)?.takeIf { it.isNotBlank() }?.let {
                 GeminiProvider(
                     id = "gemini",
-                    tier = Tier.FREE,
+                    tier = Tier.PAID,
                     caps = ProviderCaps(),
                     endpoint = "https://generativelanguage.googleapis.com/v1beta",
                     // gemini-2.5-flash 404s as "no longer available to new users" for this key

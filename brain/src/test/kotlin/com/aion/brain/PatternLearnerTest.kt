@@ -39,13 +39,19 @@ class PatternLearnerTest {
 
         assertEquals(1, proposals.size)
         assertEquals(RoutineKind.TIME_BASED, proposals.single().kind)
-        assertEquals(3, proposals.single().candidate.episodes.size)
+        assertEquals(
+            3,
+            proposals
+                .single()
+                .candidate.episodes.size,
+        )
         assertTrue(proposals.single().description.contains("07:0"))
     }
 
     @Test
     fun `only 2 occurrences of a time-based pattern does not trigger detection`() {
-        val episodes = listOf(episode("weather check karo", tsAt(1, 7, 0)), episode("weather check karo", tsAt(2, 7, 5)))
+        val episodes =
+            listOf(episode("weather check karo", tsAt(1, 7, 0)), episode("weather check karo", tsAt(2, 7, 5)))
 
         assertTrue(PatternLearner.detectTimeBasedRoutines(episodes).isEmpty())
     }
@@ -78,7 +84,12 @@ class PatternLearnerTest {
 
         assertEquals(1, proposals.size)
         assertEquals(RoutineKind.SEQUENCE, proposals.single().kind)
-        assertEquals(6, proposals.single().candidate.episodes.size)
+        assertEquals(
+            6,
+            proposals
+                .single()
+                .candidate.episodes.size,
+        )
         assertTrue(proposals.single().description.contains("mail padho"))
         assertTrue(proposals.single().description.contains("calendar check karo"))
     }

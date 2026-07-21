@@ -159,8 +159,18 @@ class GmailPlugin(
         val response = httpClient.get("$BASE_URL/messages/$id") { bearer() }
         if (!response.status.isSuccess()) return response.toFailure()
         val detail = response.body<GmailMessageDetail>()
-        val subject = detail.payload?.headers?.find { it.name.equals("Subject", ignoreCase = true) }?.value.orEmpty()
-        val from = detail.payload?.headers?.find { it.name.equals("From", ignoreCase = true) }?.value.orEmpty()
+        val subject =
+            detail.payload
+                ?.headers
+                ?.find { it.name.equals("Subject", ignoreCase = true) }
+                ?.value
+                .orEmpty()
+        val from =
+            detail.payload
+                ?.headers
+                ?.find { it.name.equals("From", ignoreCase = true) }
+                ?.value
+                .orEmpty()
         return ToolResult(
             true,
             JsonObject(

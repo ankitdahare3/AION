@@ -99,7 +99,7 @@ class ReflectorAgentTest {
         }
 
     @Test
-    fun `T-162 - a recoverable failure that keeps recurring past the retry ceiling aborts honestly instead of looping forever`() =
+    fun `T-162 - a recoverable failure recurring past the retry ceiling aborts instead of looping forever`() =
         runTest {
             val agent = ReflectorAgent(maxRecoverableRetries = 3)
             val failing =
@@ -117,7 +117,10 @@ class ReflectorAgentTest {
 
             val overCeiling = agent.step(failing)
 
-            assertTrue("the 4th recurrence of the same failure should abort rather than retry a 4th time", overCeiling.done)
+            assertTrue(
+                "the 4th recurrence of the same failure should abort rather than retry a 4th time",
+                overCeiling.done,
+            )
             assertEquals(ResponsePhrasing.forFailure(FailureCause.UNKNOWN, hinglish = false), overCeiling.response)
         }
 
@@ -129,7 +132,10 @@ class ReflectorAgentTest {
             val result = ReflectorAgent().step(s)
 
             assertTrue(result.done)
-            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = false), result.response)
+            assertEquals(
+                ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = false),
+                result.response,
+            )
             assertFalse(result.response!!.contains("E5_PERMISSION_BLOCKED"))
             assertFalse(result.response!!.contains("Shizuku"))
         }
@@ -137,11 +143,18 @@ class ReflectorAgentTest {
     @Test
     fun `an unrecoverable abort for a Hinglish goal replies in Hinglish`() =
         runTest {
-            val s = AgentState(goal = "WhatsApp khol ke naya message bhejo", failures = listOf("no launch intent for com.whatsapp"))
+            val s =
+                AgentState(
+                    goal = "WhatsApp khol ke naya message bhejo",
+                    failures = listOf("no launch intent for com.whatsapp"),
+                )
 
             val result = ReflectorAgent().step(s)
 
-            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true), result.response)
+            assertEquals(
+                ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true),
+                result.response,
+            )
         }
 
     @Test

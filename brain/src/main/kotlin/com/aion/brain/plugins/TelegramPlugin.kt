@@ -125,7 +125,8 @@ class TelegramPlugin(
     }
 
     private suspend fun sendMessage(args: JsonObject): ToolResult {
-        val chatId = args["chat_id"]?.jsonPrimitive?.content ?: throw IllegalArgumentException("missing required arg: chat_id")
+        val chatId =
+            args["chat_id"]?.jsonPrimitive?.content ?: throw IllegalArgumentException("missing required arg: chat_id")
         val text = args["text"]?.jsonPrimitive?.content ?: throw IllegalArgumentException("missing required arg: text")
         val response =
             httpClient.post("$BASE_URL$botToken/sendMessage") {

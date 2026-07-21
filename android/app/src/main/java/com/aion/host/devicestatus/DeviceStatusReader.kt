@@ -19,7 +19,9 @@ data class DeviceStatus(
 
 /** T-153 (EPIC 17) — real device vitals (mockup screens #27 Performance, #35 Battery), no new
  * permission needed: `BatteryManager`/`ActivityManager`/`StatFs` are all normal, ungated APIs. */
-class DeviceStatusReader(private val context: Context) {
+class DeviceStatusReader(
+    private val context: Context,
+) {
     fun read(): DeviceStatus {
         // Registering a null receiver for this sticky broadcast returns the last-known battery
         // state synchronously — the standard way to read battery status without a running

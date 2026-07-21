@@ -18,10 +18,10 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.IBinder
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.aion.host.MainActivity
@@ -96,7 +96,11 @@ class VoiceForegroundService : Service() {
 
     private fun buildNotification(): android.app.Notification {
         val channel =
-            NotificationChannel(CHANNEL_ID, getString(R.string.voice_notification_channel), NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.voice_notification_channel),
+                NotificationManager.IMPORTANCE_LOW,
+            )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         val openApp =
             PendingIntent.getActivity(
@@ -169,10 +173,17 @@ class VoiceForegroundService : Service() {
     }
 
     private fun startCapture() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
             return
         }
-        val minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE_HZ, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        val minBufferSize =
+            AudioRecord.getMinBufferSize(
+                SAMPLE_RATE_HZ,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+            )
         if (minBufferSize <= 0) return
         val record =
             AudioRecord(

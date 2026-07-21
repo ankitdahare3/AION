@@ -16,9 +16,35 @@ package com.aion.brain
 object ResponsePhrasing {
     private val HINGLISH_TOKENS =
         setOf(
-            "karo", "kar", "karein", "kijiye", "khol", "kholo", "batao", "dikhao", "dekho", "jao",
-            "mein", "ka", "ke", "ki", "badhao", "dhundo", "se", "lo", "aaj", "kal", "band", "hai",
-            "nahi", "abhi", "bhejo", "bhej", "wala", "kya", "pe",
+            "karo",
+            "kar",
+            "karein",
+            "kijiye",
+            "khol",
+            "kholo",
+            "batao",
+            "dikhao",
+            "dekho",
+            "jao",
+            "mein",
+            "ka",
+            "ke",
+            "ki",
+            "badhao",
+            "dhundo",
+            "se",
+            "lo",
+            "aaj",
+            "kal",
+            "band",
+            "hai",
+            "nahi",
+            "abhi",
+            "bhejo",
+            "bhej",
+            "wala",
+            "kya",
+            "pe",
         )
 
     /** True if [goal] itself was phrased with any Hindi/Hinglish token — the reply matches back in kind. */

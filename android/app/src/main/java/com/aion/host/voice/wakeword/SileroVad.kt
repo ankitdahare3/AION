@@ -27,7 +27,10 @@ internal class SileroVad(
     }
 
     /** Mean voice-activity score (0..1) over [samples], split into [frameSize]-sample chunks (default 640 = 40ms @16kHz, matching openWakeWord's own streaming call). */
-    fun score(samples: ShortArray, frameSize: Int = 640): Float {
+    fun score(
+        samples: ShortArray,
+        frameSize: Int = 640,
+    ): Float {
         if (samples.isEmpty()) return 0f
         var sum = 0f
         var count = 0

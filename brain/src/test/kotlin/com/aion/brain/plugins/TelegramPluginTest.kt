@@ -39,7 +39,11 @@ class TelegramPluginTest {
         runTest {
             val captured = mutableListOf<HttpRequestData>()
             val client = clientReturning(HttpStatusCode.OK, """{"ok":true,"result":{"message_id":42}}""", captured)
-            val result = TelegramPlugin("TOKEN123", client).execute(ToolCall("send_message", """{"chat_id":"123","text":"hi"}""", true))
+            val result =
+                TelegramPlugin(
+                    "TOKEN123",
+                    client,
+                ).execute(ToolCall("send_message", """{"chat_id":"123","text":"hi"}""", true))
 
             assertTrue(result.success)
             assertTrue(result.resultJson.contains("42"))
@@ -66,7 +70,11 @@ class TelegramPluginTest {
     fun `telegram ok=false is a clean failure carrying the description`() =
         runTest {
             val client = clientReturning(HttpStatusCode.OK, """{"ok":false,"description":"chat not found"}""")
-            val result = TelegramPlugin("TOKEN123", client).execute(ToolCall("send_message", """{"chat_id":"999","text":"hi"}""", true))
+            val result =
+                TelegramPlugin(
+                    "TOKEN123",
+                    client,
+                ).execute(ToolCall("send_message", """{"chat_id":"999","text":"hi"}""", true))
 
             assertFalse(result.success)
             assertTrue(result.error?.contains("chat not found") == true)
@@ -77,7 +85,11 @@ class TelegramPluginTest {
         runTest {
             val captured = mutableListOf<HttpRequestData>()
             val client = clientReturning(HttpStatusCode.OK, "{}", captured)
-            val result = TelegramPlugin("TOKEN123", client).execute(ToolCall("send_message", """{"chat_id":"1"}""", true))
+            val result =
+                TelegramPlugin(
+                    "TOKEN123",
+                    client,
+                ).execute(ToolCall("send_message", """{"chat_id":"1"}""", true))
 
             assertFalse(result.success)
             assertTrue(result.error?.contains("text") == true)
@@ -87,7 +99,11 @@ class TelegramPluginTest {
     @Test
     fun `an unknown tool name is rejected`() =
         runTest {
-            val result = TelegramPlugin("TOKEN123", clientReturning(HttpStatusCode.OK, "{}")).execute(ToolCall("delete_everything", "{}", false))
+            val result =
+                TelegramPlugin(
+                    "TOKEN123",
+                    clientReturning(HttpStatusCode.OK, "{}"),
+                ).execute(ToolCall("delete_everything", "{}", false))
 
             assertFalse(result.success)
             assertTrue(result.error?.contains("delete_everything") == true)

@@ -57,11 +57,16 @@ class ReflectorAgent(
             s.failures.lastOrNull()
                 ?: return s.copy(
                     done = true,
-                    response = s.response ?: ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
+                    response =
+                        s.response
+                            ?: ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
                 )
         val cause = classify(latest)
         if (cause !in RECOVERABLE) {
-            return s.copy(done = true, response = ResponsePhrasing.forFailure(cause, ResponsePhrasing.isHinglish(s.goal)))
+            return s.copy(
+                done = true,
+                response = ResponsePhrasing.forFailure(cause, ResponsePhrasing.isHinglish(s.goal)),
+            )
         }
         recoverableRetryCount++
         if (recoverableRetryCount > maxRecoverableRetries) {

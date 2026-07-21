@@ -14,6 +14,7 @@ import com.aion.brain.DeviceExplorer
 import com.aion.brain.MemoryConsolidator
 import com.aion.brain.MemoryStore
 import com.aion.host.automation.ActionDispatcher
+import com.aion.host.automation.ActionResult
 import com.aion.host.automation.AionAccessibilityService
 import com.aion.host.automation.GlobalAction
 import dagger.hilt.EntryPoint
@@ -50,9 +51,13 @@ class DeviceExplorationWorker(
 
         val scans =
             targets.map { pkg ->
-                entry.actionDispatcher().launchApp(pkg)
+                val launched = entry.actionDispatcher().launchApp(pkg)
                 delay(LAUNCH_SETTLE_MS)
-                val text = service.currentScreenText()
+                // A failed launch (no launch intent, ActivityNotFoundException) still leaves SOME
+                // screen showing — home, or whatever app was already open — reading it anyway would
+                // store that unrelated screen as if it were pkg's own landing screen, poisoning
+                // PlannerAgent's grounding for an app it never actually saw.
+                val text = if (launched is ActionResult.Success) service.currentScreenText() else null
                 entry.actionDispatcher().globalAction(GlobalAction.HOME)
                 delay(HOME_SETTLE_MS)
                 AppScanResult(pkg, text)
@@ -68,7 +73,12 @@ class DeviceExplorationWorker(
         val result = MemoryConsolidator.consolidate(store.getAllActive(), nowMs = now)
         result.updates.forEach { store.update(it) }
         result.softDeletes.forEach { store.softDelete(it) }
-        Log.i(TAG, "explored ${targets.size} apps, ${scans.count { it.screenText != null }} readable — ${result.report.summary}")
+        Log.i(
+            TAG,
+            "explored ${targets.size} apps, ${scans.count {
+                it.screenText != null
+            }} readable — ${result.report.summary}",
+        )
 
         return Result.success()
     }

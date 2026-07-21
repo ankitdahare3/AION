@@ -48,13 +48,17 @@ object PatternLearner {
             while (iterator.hasNext()) {
                 val e = iterator.next()
                 val minuteGap = Math.abs(minuteOfDay(e.ts) - anchorMinute)
-                if (TextSimilarity.similarity(anchor.goal, e.goal) >= TEXT_SIMILARITY_THRESHOLD && minuteGap <= windowMinutes) {
+                if (TextSimilarity.similarity(anchor.goal, e.goal) >= TEXT_SIMILARITY_THRESHOLD &&
+                    minuteGap <= windowMinutes
+                ) {
                     cluster += e
                     iterator.remove()
                 }
             }
             if (cluster.size >= MIN_OCCURRENCES) {
-                val desc = "Every day around ${formatMinuteOfDay(anchorMinute)}, you: \"${anchor.goal}\" — make this a routine?"
+                val desc = "Every day around ${formatMinuteOfDay(
+                    anchorMinute,
+                )}, you: \"${anchor.goal}\" — make this a routine?"
                 proposals += RoutineProposal(RoutineKind.TIME_BASED, desc, RepeatedTaskCandidate(anchor.goal, cluster))
             }
         }

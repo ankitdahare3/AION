@@ -57,7 +57,8 @@ private fun throwingProvider(message: String) =
         override suspend fun complete(req: BrainRequest): BrainResult = throw IllegalStateException(message)
     }
 
-private fun routerFor(provider: Provider) = ProviderRouter(registry = listOf(provider), scores = noopScoreStore, budget = alwaysCanSpend)
+private fun routerFor(provider: Provider) =
+    ProviderRouter(registry = listOf(provider), scores = noopScoreStore, budget = alwaysCanSpend)
 
 class ChatAgentTest {
     @Test
@@ -103,7 +104,9 @@ class ChatAgentTest {
         }
 }
 
-private class RecordingAgent(private val label: String) : Agent {
+private class RecordingAgent(
+    private val label: String,
+) : Agent {
     var called = false
         private set
 

@@ -70,7 +70,21 @@ import com.aion.host.weather.WeatherScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private enum class Screen { HOME, SETUP, AUDIT_LOG, API_KEYS, CHAT, CALENDAR, COMMUNICATIONS, DEVICE_STATUS, USAGE_STATS, PROACTIVE, FINANCE, WEATHER, TRANSLATE }
+private enum class Screen {
+    HOME,
+    SETUP,
+    AUDIT_LOG,
+    API_KEYS,
+    CHAT,
+    CALENDAR,
+    COMMUNICATIONS,
+    DEVICE_STATUS,
+    USAGE_STATS,
+    PROACTIVE,
+    FINANCE,
+    WEATHER,
+    TRANSLATE,
+}
 
 /**
  * DOC-020 S1 app skeleton / T-004 — hosts the PR-02 permission setup wizard as the launcher screen.

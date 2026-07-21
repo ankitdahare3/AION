@@ -87,7 +87,11 @@ class ProviderRouterExplorationSimTest {
 
             repeat(ROUNDS) { router.route(req) }
 
-            assertEquals("pure-greedy should never try 'bad' once 'good' ties or leads", 0, scores.failureCount["bad"] ?: 0)
+            assertEquals(
+                "pure-greedy should never try 'bad' once 'good' ties or leads",
+                0,
+                scores.failureCount["bad"] ?: 0,
+            )
         }
 
     @Test

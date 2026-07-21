@@ -8,7 +8,10 @@ import kotlinx.coroutines.tasks.await
 /** Fixed, small set rather than ML Kit's full ~60-language catalog — matches this app's own
  * real bilingual (English/Hindi) focus, plus a few common languages, over building a full
  * language-picker UI for a catalog nothing else in the app needs yet. */
-enum class SupportedLanguage(val code: String, val label: String) {
+enum class SupportedLanguage(
+    val code: String,
+    val label: String,
+) {
     ENGLISH(TranslateLanguage.ENGLISH, "English"),
     HINDI(TranslateLanguage.HINDI, "Hindi"),
     SPANISH(TranslateLanguage.SPANISH, "Spanish"),
@@ -29,7 +32,8 @@ class TranslatorReader {
         to: SupportedLanguage,
     ): String {
         val options =
-            TranslatorOptions.Builder()
+            TranslatorOptions
+                .Builder()
                 .setSourceLanguage(from.code)
                 .setTargetLanguage(to.code)
                 .build()

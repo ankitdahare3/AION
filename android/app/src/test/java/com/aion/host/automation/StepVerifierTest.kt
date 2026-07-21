@@ -55,4 +55,3 @@ class StepVerifierTest {
         assertFalse(StepVerifier.needsReflection(result))
     }
 }
-

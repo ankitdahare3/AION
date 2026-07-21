@@ -24,3 +24,5 @@ providers.local.yaml
 models/*.gguf
 models/*.onnx
 models/*.bin
+# Added by code-review-graph
+.code-review-graph/

@@ -85,7 +85,11 @@ private fun CallRow(call: CallLogItem) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
         Column(modifier = Modifier.weight(1f)) {
             Text(call.displayName, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
-            Text(call.direction.name.lowercase(), style = MaterialTheme.typography.bodySmall, color = AionColors.OnSurfaceMuted)
+            Text(
+                call.direction.name.lowercase(),
+                style = MaterialTheme.typography.bodySmall,
+                color = AionColors.OnSurfaceMuted,
+            )
         }
         Text(
             dateTimeFormat.format(Date(call.timestampMs)),

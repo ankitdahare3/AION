@@ -15,7 +15,9 @@ data class AppUsage(
 /** T-154 (EPIC 17) — real today's screen-time breakdown (mockup #36), reusing the
  * `USAGE_ACCESS` special-access permission the setup wizard already gates (`SetupPermission
  * .USAGE_ACCESS`) — no new grant needed. Gracefully returns nothing without it. */
-class UsageStatsReader(private val context: Context) {
+class UsageStatsReader(
+    private val context: Context,
+) {
     fun hasAccess(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode =

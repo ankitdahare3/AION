@@ -138,7 +138,9 @@ class RecoveryDrillTest {
                 val result = graph.run(AgentState(goal = "wifi on karo"))
 
                 val didRecover =
-                    result.done && result.failures.isEmpty() && result.response == ResponsePhrasing.forSuccess(hinglish = true)
+                    result.done &&
+                        result.failures.isEmpty() &&
+                        result.response == ResponsePhrasing.forSuccess(hinglish = true)
                 outcomes += failureMessage to didRecover
                 if (didRecover) recovered++
             }
@@ -159,7 +161,10 @@ class RecoveryDrillTest {
             val result = graph.run(AgentState(goal = "wifi on karo"))
 
             assertTrue(result.done)
-            assertEquals(ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true), result.response)
+            assertEquals(
+                ResponsePhrasing.forFailure(FailureCause.E5_PERMISSION_BLOCKED, hinglish = true),
+                result.response,
+            )
             assertFalse(result.response!!.contains("accessibility service"))
         }
 }

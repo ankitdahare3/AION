@@ -4,6 +4,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -49,10 +51,19 @@ class ApprovalGateService
                     if (_pending.value?.id == id) _pending.value = null
                 }
 
+            // voiceLine embeds the plan step's target text (RealApprovalGate), which ultimately
+            // comes from LLM output — hand-rolled interpolation would break the hash-chained audit
+            // log's JSON the moment a target contains a literal quote (JsonObject escapes it).
             auditLogger.record(
                 actor = "user",
                 action = "approval.decision",
-                payloadJson = """{"voiceLine":"$voiceLine","approved":$approved}""",
+                payloadJson =
+                    JsonObject(
+                        mapOf(
+                            "voiceLine" to JsonPrimitive(voiceLine),
+                            "approved" to JsonPrimitive(approved),
+                        ),
+                    ).toString(),
             )
             return approved
         }

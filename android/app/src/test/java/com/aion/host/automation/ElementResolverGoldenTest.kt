@@ -108,7 +108,10 @@ class ElementResolverGoldenTest {
     fun `canvas-app tap demo — empty a11y tree falls back to a vision OCR block and its bounds yield a tap point`() {
         val vision =
             VisionObservation(
-                ocrBlocks = listOf(OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f)),
+                ocrBlocks =
+                    listOf(
+                        OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f),
+                    ),
                 screenSummary = "Start Game",
             )
 
@@ -143,7 +146,10 @@ class ElementResolverGoldenTest {
     fun `ById never falls through to vision since OCR blocks have no stable id`() {
         val vision =
             VisionObservation(
-                ocrBlocks = listOf(OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f)),
+                ocrBlocks =
+                    listOf(
+                        OcrBlock(text = "Start Game", bounds = Bounds(100, 200, 300, 260), confidence = 0.95f),
+                    ),
                 screenSummary = "Start Game",
             )
 

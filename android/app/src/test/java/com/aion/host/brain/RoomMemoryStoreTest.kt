@@ -19,7 +19,11 @@ private class FakeMemoryDao : MemoryDao {
         return withId.id
     }
 
-    override suspend fun getAllActive(): List<MemoryEntity> = rows.filterNot { it.deletedSoft }.sortedByDescending { it.created }
+    override suspend fun getAllActive(): List<MemoryEntity> =
+        rows
+            .filterNot {
+                it.deletedSoft
+            }.sortedByDescending { it.created }
 
     override suspend fun update(memory: MemoryEntity) {
         val i = rows.indexOfFirst { it.id == memory.id }
@@ -37,7 +41,18 @@ class RoomMemoryStoreTest {
     fun `an inserted memory round-trips through getAllActive`() =
         runTest {
             val store = RoomMemoryStore(FakeMemoryDao())
-            store.insert(Memory(kind = MemoryKind.FACT, text = "user's name is Ankit", confidence = 0.8, provenance = "chat", piiTags = listOf("name"), created = 100, accessed = 100, decayScore = 1.0))
+            store.insert(
+                Memory(
+                    kind = MemoryKind.FACT,
+                    text = "user's name is Ankit",
+                    confidence = 0.8,
+                    provenance = "chat",
+                    piiTags = listOf("name"),
+                    created = 100,
+                    accessed = 100,
+                    decayScore = 1.0,
+                ),
+            )
 
             val active = store.getAllActive()
 
@@ -51,7 +66,18 @@ class RoomMemoryStoreTest {
         runTest {
             val dao = FakeMemoryDao()
             val store = RoomMemoryStore(dao)
-            val id = store.insert(Memory(kind = MemoryKind.PREF, text = "formal tone", confidence = 0.5, provenance = "chat", created = 0, accessed = 0, decayScore = 1.0))
+            val id =
+                store.insert(
+                    Memory(
+                        kind = MemoryKind.PREF,
+                        text = "formal tone",
+                        confidence = 0.5,
+                        provenance = "chat",
+                        created = 0,
+                        accessed = 0,
+                        decayScore = 1.0,
+                    ),
+                )
 
             store.update(store.getAllActive().single().copy(confidence = 0.9))
 
@@ -63,7 +89,18 @@ class RoomMemoryStoreTest {
     fun `soft-deleted memories drop out of getAllActive`() =
         runTest {
             val store = RoomMemoryStore(FakeMemoryDao())
-            val id = store.insert(Memory(kind = MemoryKind.FACT, text = "wifi password is hunter2", confidence = 0.9, provenance = "chat", created = 0, accessed = 0, decayScore = 1.0))
+            val id =
+                store.insert(
+                    Memory(
+                        kind = MemoryKind.FACT,
+                        text = "wifi password is hunter2",
+                        confidence = 0.9,
+                        provenance = "chat",
+                        created = 0,
+                        accessed = 0,
+                        decayScore = 1.0,
+                    ),
+                )
 
             store.softDelete(id)
 

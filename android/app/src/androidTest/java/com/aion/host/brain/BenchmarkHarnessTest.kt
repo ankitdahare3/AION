@@ -87,7 +87,9 @@ class BenchmarkHarnessTest {
      * suppresses all others, which would silently undo the very rebind this is performing.
      */
     private fun connectAccessibilityService() {
-        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        val instrumentation =
+            androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation()
         val ui = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
         val service = "com.aion.host/com.aion.host.automation.AionAccessibilityService"
         shell(ui, "settings put secure enabled_accessibility_services none")
@@ -124,7 +126,10 @@ class BenchmarkHarnessTest {
             val results = mutableListOf<BenchmarkTaskResult>()
             for (task in BENCHMARK_TASKS) {
                 results += runOne(task)
-                android.util.Log.i(TAG, "${task.category} \"${task.goal}\" -> ${results.last().success} (${results.last().response})")
+                android.util.Log.i(
+                    TAG,
+                    "${task.category} \"${task.goal}\" -> ${results.last().success} (${results.last().response})",
+                )
             }
 
             val successCount = results.count { it.success }

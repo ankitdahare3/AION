@@ -63,8 +63,17 @@ fun UsageStatsScreen(
 @Composable
 private fun AppUsageRow(app: AppUsage) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Text(app.label, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground, modifier = Modifier.weight(1f))
-        Text(formatDuration(app.foregroundMs), style = MaterialTheme.typography.bodyMedium, color = AionColors.OnSurfaceMuted)
+        Text(
+            app.label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = AionColors.OnBackground,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            formatDuration(app.foregroundMs),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AionColors.OnSurfaceMuted,
+        )
     }
     HorizontalDivider()
 }

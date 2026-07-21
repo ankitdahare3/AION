@@ -202,7 +202,11 @@ class AionGraphFactoryTest {
                 ActionExecutor { step: PlanStep ->
                     callCount++
                     if (callCount <= 2) {
-                        ExecutionOutcome(success = false, observation = "", error = "could not resolve element: Wi-Fi toggle")
+                        ExecutionOutcome(
+                            success = false,
+                            observation = "",
+                            error = "could not resolve element: Wi-Fi toggle",
+                        )
                     } else {
                         ExecutionOutcome(success = true, observation = "ok:${step.action}")
                     }
@@ -249,7 +253,11 @@ class AionGraphFactoryTest {
                     if (step.target == "Wi-Fi toggle") {
                         ExecutionOutcome(success = true, observation = "ok:${step.action}")
                     } else {
-                        ExecutionOutcome(success = false, observation = "", error = "could not resolve element: ${step.target}")
+                        ExecutionOutcome(
+                            success = false,
+                            observation = "",
+                            error = "could not resolve element: ${step.target}",
+                        )
                     }
                 }
 
@@ -264,7 +272,7 @@ class AionGraphFactoryTest {
         }
 
     @Test
-    fun `T-162 - a goal that never converges fails fast and honest instead of grinding to AionGraph's 30-step ceiling`() =
+    fun `T-162 - a goal that never converges fails fast and honest instead of grinding to the 30-step ceiling`() =
         runTest {
             val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
             checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
@@ -281,7 +289,9 @@ class AionGraphFactoryTest {
                     override val caps = ProviderCaps()
 
                     override suspend fun complete(req: BrainRequest): BrainResult {
-                        val text = """[{"action":"tap","target":"WRONG_ELEMENT","expected":"Wi-Fi on","sideEffect":false}]"""
+                        val text =
+                            """[{"action":"tap","target":"WRONG_ELEMENT","expected":"Wi-Fi on",""" +
+                                """"sideEffect":false}]"""
                         return BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
                     }
                 }
@@ -291,7 +301,11 @@ class AionGraphFactoryTest {
             val executor =
                 ActionExecutor { step: PlanStep ->
                     executorCalls++
-                    ExecutionOutcome(success = false, observation = "", error = "could not resolve element: ${step.target}")
+                    ExecutionOutcome(
+                        success = false,
+                        observation = "",
+                        error = "could not resolve element: ${step.target}",
+                    )
                 }
 
             val factory = AionGraphFactory(checkpointer, emptyMemoryStore, noScreenSnapshot, FewShotBank())
@@ -334,7 +348,10 @@ class AionGraphFactoryTest {
                     }
                 }
             val router = ProviderRouter(listOf(provider), noopScoreStore, alwaysCanSpend)
-            val executor = ActionExecutor { step: PlanStep -> ExecutionOutcome(success = true, observation = "ok:${step.action}") }
+            val executor =
+                ActionExecutor { step: PlanStep ->
+                    ExecutionOutcome(success = true, observation = "ok:${step.action}")
+                }
             val liveScreen = ScreenSnapshotProvider { "Wi-Fi toggle [off], Bluetooth toggle [off]" }
 
             val factory = AionGraphFactory(checkpointer, emptyMemoryStore, liveScreen, FewShotBank())

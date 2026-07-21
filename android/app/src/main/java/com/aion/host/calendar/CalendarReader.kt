@@ -24,9 +24,13 @@ data class CalendarEvent(
  * never crashes on a missing capability, it reports "not available." Also gracefully returns
  * empty if the query itself throws (e.g. a transiently-unavailable content provider) rather than
  * crashing the screen (T-160 found this exact crash live via `SmsReader`). */
-class CalendarReader(private val context: Context) {
+class CalendarReader(
+    private val context: Context,
+) {
     fun todayEvents(nowMs: Long = System.currentTimeMillis()): List<CalendarEvent> {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
             return emptyList()
         }
         val (startOfDay, endOfDay) = dayRangeMs(nowMs)
@@ -72,6 +76,11 @@ internal fun dayRangeMs(nowMs: Long): Pair<Long, Long> {
     val zone = ZoneId.systemDefault()
     val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
     val startOfDay = today.atStartOfDay(zone).toInstant().toEpochMilli()
-    val endOfDay = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+    val endOfDay =
+        today
+            .plusDays(1)
+            .atStartOfDay(zone)
+            .toInstant()
+            .toEpochMilli()
     return startOfDay to endOfDay
 }

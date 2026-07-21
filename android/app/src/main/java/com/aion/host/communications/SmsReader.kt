@@ -20,9 +20,13 @@ data class SmsItem(
  * Also gracefully returns empty if the query itself throws — found live via T-160's Weather work:
  * a `pm clear` on `com.android.providers.telephony` briefly left its database directory missing,
  * and an unguarded query crashed the whole app with `SQLiteException`. */
-class SmsReader(private val context: Context) {
+class SmsReader(
+    private val context: Context,
+) {
     fun recentMessages(limit: Int = 20): List<SmsItem> {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
             return emptyList()
         }
         val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)

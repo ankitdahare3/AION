@@ -198,9 +198,8 @@ class PlannerAgentTest {
                     override val tier = Tier.LOCAL
                     override val caps = ProviderCaps()
 
-                    override suspend fun complete(req: BrainRequest): BrainResult {
+                    override suspend fun complete(req: BrainRequest): BrainResult =
                         throw IllegalStateException("provider quota exhausted")
-                    }
                 }
 
             val result = PlannerAgent(routerFor(throwingProvider)).step(AgentState(goal = "do anything"))

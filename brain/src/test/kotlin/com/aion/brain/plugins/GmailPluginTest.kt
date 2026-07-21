@@ -109,7 +109,11 @@ class GmailPluginTest {
     @Test
     fun `an unknown tool name is rejected`() =
         runTest {
-            val result = GmailPlugin("token", clientReturning(HttpStatusCode.OK, "{}")).execute(ToolCall("delete_everything", "{}", false))
+            val result =
+                GmailPlugin(
+                    "token",
+                    clientReturning(HttpStatusCode.OK, "{}"),
+                ).execute(ToolCall("delete_everything", "{}", false))
 
             assertFalse(result.success)
             assertTrue(result.error?.contains("delete_everything") == true)

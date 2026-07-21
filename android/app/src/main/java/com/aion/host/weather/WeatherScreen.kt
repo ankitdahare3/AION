@@ -21,9 +21,13 @@ private sealed interface WeatherUiState {
 
     data object NoLocation : WeatherUiState
 
-    data class Loaded(val reading: WeatherReading) : WeatherUiState
+    data class Loaded(
+        val reading: WeatherReading,
+    ) : WeatherUiState
 
-    data class Failed(val message: String) : WeatherUiState
+    data class Failed(
+        val message: String,
+    ) : WeatherUiState
 }
 
 /**
@@ -85,7 +89,11 @@ fun WeatherScreen(
                     color = AionColors.OnBackground,
                     modifier = Modifier.padding(top = 16.dp),
                 )
-                Text(s.reading.description, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnSurfaceMuted)
+                Text(
+                    s.reading.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AionColors.OnSurfaceMuted,
+                )
                 Text(
                     "Humidity ${s.reading.humidityPercent}% · Wind ${s.reading.windSpeedKmh.toInt()} km/h",
                     style = MaterialTheme.typography.bodyMedium,

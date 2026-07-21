@@ -19,9 +19,13 @@ data class CallLogItem(
  * returns an empty list without `READ_CALL_LOG`, same degrade pattern as `CalendarReader`. Also
  * gracefully returns empty if the query itself throws (e.g. a transiently-unavailable content
  * provider) rather than crashing the screen (T-160). */
-class CallLogReader(private val context: Context) {
+class CallLogReader(
+    private val context: Context,
+) {
     fun recentCalls(limit: Int = 10): List<CallLogItem> {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
             return emptyList()
         }
         val projection =

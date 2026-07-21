@@ -29,9 +29,13 @@ private sealed interface TranslateUiState {
 
     data object Translating : TranslateUiState
 
-    data class Done(val result: String) : TranslateUiState
+    data class Done(
+        val result: String,
+    ) : TranslateUiState
 
-    data class Failed(val message: String) : TranslateUiState
+    data class Failed(
+        val message: String,
+    ) : TranslateUiState
 }
 
 /** T-161 (EPIC 17) — on-device translation (ML Kit, free, no API key/signup). */

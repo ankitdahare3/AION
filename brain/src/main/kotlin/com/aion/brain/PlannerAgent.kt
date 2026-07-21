@@ -71,12 +71,17 @@ class PlannerAgent(
             // AionGraph's frozen run() loop means ResponderAgent never gets a turn — so this must
             // author its own natural-language response too, or the graph would end with `response`
             // still null (confirmed by an earlier real benchmark run, T-121/BACKLOG.md).
-            val reason = lastRouteFailure?.let { "planner: routing failed: $it" }
-                ?: "planner: failed to produce a valid JSON plan after retry"
+            val reason =
+                lastRouteFailure?.let { "planner: routing failed: $it" }
+                    ?: "planner: failed to produce a valid JSON plan after retry"
             s.copy(
                 done = true,
                 failures = s.failures + reason,
-                response = ResponsePhrasing.forFailure(FailureCause.E4_MODEL_PLAN_ERROR, ResponsePhrasing.isHinglish(s.goal)),
+                response =
+                    ResponsePhrasing.forFailure(
+                        FailureCause.E4_MODEL_PLAN_ERROR,
+                        ResponsePhrasing.isHinglish(s.goal),
+                    ),
             )
         }
     }
@@ -140,7 +145,11 @@ class PlannerAgent(
     // Memory.text is DeviceExplorer's own "App <pkg>: <screenText>" format.
     private fun packageNameOf(memoryText: String): String? {
         if (!memoryText.startsWith("App ")) return null
-        return memoryText.removePrefix("App ").substringBefore(':').trim().takeIf { it.isNotBlank() }
+        return memoryText
+            .removePrefix("App ")
+            .substringBefore(':')
+            .trim()
+            .takeIf { it.isNotBlank() }
     }
 
     // T-121 finding — real models routinely ignore "no markdown fences" and wrap the array in
@@ -183,9 +192,11 @@ class PlannerAgent(
             "You are AION's planner. Given a goal, output ONLY a JSON array of steps. No prose, no " +
                 "markdown fences, no explanation — the JSON array is the entire response.\n\n" +
                 "Every step MUST be an object with ALL of these fields:\n" +
-                """{"action": "<action name>", "target": "<target>", "expected": "<what is true after this step succeeds>", "sideEffect": <true|false>}""" +
+                """{"action": "<action name>", "target": "<target>", "expected": "<what is true after """ +
+                """this step succeeds>", "sideEffect": <true|false>}""" +
                 "\n\nExample response:\n" +
-                """[{"action":"launchApp","target":"com.android.settings","expected":"Settings app open","sideEffect":false},""" +
+                """[{"action":"launchApp","target":"com.android.settings","expected":"Settings app """ +
+                """open","sideEffect":false},""" +
                 """{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi settings open","sideEffect":false}]""" +
                 "\n\nYou may ONLY use these action names — anything else will fail to execute:\n" +
                 "- tap: target = visible text/label of the element to tap (fuzzy-matched on screen)\n" +

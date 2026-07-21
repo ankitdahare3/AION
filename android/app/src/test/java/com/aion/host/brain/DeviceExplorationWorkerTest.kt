@@ -7,14 +7,19 @@ import org.junit.Test
 class DeviceExplorationWorkerTest {
     @Test
     fun `own package is excluded from the scan targets`() {
-        val result = filterExplorable(listOf("com.android.settings", "com.aion.host", "com.whatsapp"), ownPackage = "com.aion.host")
+        val result =
+            filterExplorable(
+                listOf("com.android.settings", "com.aion.host", "com.whatsapp"),
+                ownPackage = "com.aion.host",
+            )
 
         assertEquals(listOf("com.android.settings", "com.whatsapp"), result)
     }
 
     @Test
     fun `duplicate packages collapse to one entry`() {
-        val result = filterExplorable(listOf("com.android.settings", "com.android.settings"), ownPackage = "com.aion.host")
+        val result =
+            filterExplorable(listOf("com.android.settings", "com.android.settings"), ownPackage = "com.aion.host")
 
         assertEquals(listOf("com.android.settings"), result)
     }

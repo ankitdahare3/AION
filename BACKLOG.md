@@ -292,19 +292,94 @@
   `emulator-5554` until someone finds the right cleanup incantation or the AVD gets recreated.
 
 - **Real-automation success rate regressed too, separately from the CHAT-diversion issue —
-  not yet diagnosed** — found 2026-07-13 during the T-121 real-device re-run. Of the 50 benchmark
-  goals, 26 genuinely reached `PlannerAgent`/`ExecutorAgent` (not diverted to `ChatAgent`) and ALL
-  26 failed — 0% on real automation, worse than this exact same real device's own prior run
-  (T-134, 2026-07-12: 16/50 successes, i.e. real automation used to work some of the time on this
-  device). The CHAT-diversion fix (T-166) explains the OTHER 24 goals turning into fabricated
-  chat replies, but doesn't explain why the 26 that DID reach real automation also all failed where
-  16-ish would have succeeded before. Candidate explanations, none confirmed: (1) real device state
-  drift since 2026-07-12 — different real apps installed/uninstalled, different real screen
-  layouts after an OS/app update, in the ~24h between runs; (2) an unintended regression from one
-  of this session's several `DispatcherActionExecutor`/`StepVerifier`/`ReflectorAgent` changes
-  (T-156/T-163/T-165) that only shows up on real hardware, not the emulator; (3) real network/LLM
-  latency or provider behavior differences between the two run dates. Needs real investigation
-  (comparing T-134's and today's `results` arrays goal-by-goal for the SAME goals that used to
-  succeed, not just the aggregate rate) before guessing further — not done here, the T-121 re-run's
-  own scope was "get an honest number and explain what's explainable," not a full second
-  investigation on top of the loop-reliability one already closed today.
+  leading hypothesis found, not yet confirmed** — found 2026-07-13 during the T-121 real-device
+  re-run. Of the 50 benchmark goals, 26 genuinely reached `PlannerAgent`/`ExecutorAgent` (not
+  diverted to `ChatAgent`) and ALL 26 failed — 0% on real automation, worse than this exact same
+  real device's own prior run (T-134, 2026-07-12: 16/50 successes). The CHAT-diversion fix (T-166)
+  explains the OTHER 24 goals turning into fabricated chat replies, but not why the 26 that DID
+  reach real automation also all failed.
+
+  Owner's own read (2026-07-13): "each device has different UI... first learn the device, then
+  it'll work." That points straight at a real, already-built mechanism: `DeviceExplorer`'s
+  "Explore Device" scan (T-114/T-116/T-117) is the thing that's supposed to teach `PlannerAgent`
+  a given device's real installed-app package names and screen layouts (`PlannerAgent.kt`'s own
+  KDoc: "the planner otherwise guesses plausible-but-often-wrong AOSP package names... that don't
+  exist on OEM-skinned devices"). It's `PROFILE` memory, populated only by a manual "Explore
+  Device" button tap (`MainActivity.kt` -> `DeviceExplorationScheduler.triggerNow`) — nothing
+  triggers it automatically. If that scan was never (re-)run on this real Samsung/One UI phone
+  before today's re-run, `PlannerAgent` was planning blind against real on-device UI it had never
+  seen, which lines up with a 0% real-automation rate. Tried to confirm directly by checking the
+  device's stored `PROFILE`/`DeviceExplorer.PROVENANCE` memories via adb, but the device was
+  `offline` at the time (screen locked) — not confirmed yet.
+
+  Verification/fix, needs the owner's phone: tap "Explore Device" once (read-only, no approval
+  prompts — see `DeviceExplorationWorker.kt`'s own KDoc), let it finish, then re-run T-121 and
+  compare against today's 0/50 and T-134's 16/50. If this is the whole story, real-automation
+  should recover toward T-134's rate. If it doesn't fully recover, the remaining gap still needs
+  goal-by-goal comparison against T-134's `results` array — the other candidate explanations
+  (real device state drift since 2026-07-12, an unintended regression from this session's
+  `DispatcherActionExecutor`/`StepVerifier`/`ReflectorAgent` changes T-156/T-163/T-165, or real
+  network/LLM latency differences) aren't ruled out, just no longer the leading guess.
+
+  **Correction, 2026-07-13 (T-167 audit) — a candidate explanation floated in chat for this run's
+  near-instant `FINANCE_READONLY`-category tail (`latencyMs` values like 0/77/102/154/189) was the
+  `$1/day` `ScoringMath.DAILY_BUDGET_USD` cap firing mid-run. Re-reading `ProvidersModule` during
+  this audit found that guess was wrong**: all 4 real providers (Groq/OpenRouter/NVIDIA/Gemini)
+  were wired as `Tier.FREE`, and `ProviderRouter.route()` only ever calls `budget.canSpend()` for
+  `Tier.PAID` candidates — the cap could not have fired that day, full stop. Fixed regardless
+  (Gemini is genuinely a metered API and belongs on `Tier.PAID`; `RoomBudgetGuard.load()` also had
+  no caller, so even a `Tier.PAID` budget would've silently reset to $0 on every process restart —
+  both now fixed), but that fix does NOT retroactively explain this specific historical run. The
+  more likely real explanation for that near-zero-latency tail, not yet confirmed: `RoomScoreStore`
+  cooldowns (`ScoringMath.cooldownDurationMs` — 6h for Quota/Auth failures, 30s for RateLimit) —
+  a long real run hitting enough 429/quota responses across all 4 free-tier providers could put
+  every candidate in cooldown simultaneously, making `ProviderRouter.route()`'s `candidates` list
+  empty and throw near-instantly. Not confirmed by re-reading logs/DB state, just the corrected
+  leading theory — whoever revisits this should check `RoomScoreStore`'s cooldown table for that
+  run's timeframe before assuming this is settled.
+
+- **`DeviceExplorationWorker` multi-screen crawling** — owner asked 2026-07-13, mid real-device
+  benchmark re-run, for exploration to go deeper into each app ("har apps me depth me ja kr har
+  click samjhe") instead of just reading the landing screen. Currently `DeviceExplorationWorker`
+  is deliberately read-only (its own KDoc: "every app gets exactly `launchApp`... followed by one
+  screen read... No taps into the app itself, so nothing the app displays can be sent, deleted, or
+  purchased"). Going deeper means real taps inside real apps during what's supposed to be a safe
+  profiling pass — needs a safety design before it's built, not just "tap everything": which
+  elements are safe to explore (nav-looking buttons/tabs) vs. which must never be tapped
+  (send/pay/confirm/delete, anything inside a finance app past the landing screen), a depth/step
+  budget so it can't wander indefinitely or get stuck in a loop, and a way to always get back to
+  the landing screen (back-stack unwind, not just a single HOME) between branches. Not started.
+
+- **`assets/providers.yaml` is dead config — `ProvidersConfigLoader` has zero production callers**
+  — found 2026-07-13 during T-167's codebase audit. The file itself claims Gemini is
+  `tier: paid`/model `gemini-2.5-flash`, and additionally lists `anthropic`/`openai`/`deepseek`/
+  `local-llamacpp`/`ollama-lan` as configured providers; none of that matches reality —
+  `ProvidersModule.provideProviderRegistry` hardcodes exactly 4 providers (Groq/OpenRouter/NVIDIA/
+  Gemini, model `gemini-2.0-flash` not `2.5-flash`) built directly from `SecretVault` keys, with no
+  anthropic adapter existing in code at all. `ProvidersConfig.kt`'s own doc comment ("DOC-013 §1 —
+  providers.yaml schema: config-driven registry, zero-code swap (NFR-10)") is currently false in
+  practice. Either wire `ProvidersModule` to actually parse+use this file, or delete the file and
+  the doc claim — whichever the owner wants; not decided unilaterally here since it's a real
+  architecture choice, not a one-line bugfix.
+
+- **`ApprovalGateService` only supports one pending approval request at a time** — found 2026-07-13
+  during T-167's codebase audit. `_pending` is a single `MutableStateFlow<ApprovalRequest?>`; a
+  second concurrent `requestApproval()` call before the first resolves overwrites `_pending.value`,
+  and the first call's `CompletableDeferred` is left in `pendingDecisions` with no UI ever showing
+  its request again — that caller hangs forever (or until `AionGraph`'s own timeout/cancellation, if
+  any, which doesn't currently exist here either). Latent, not yet hit in practice: today only one
+  `AionGraph` run executes at a time (`ChatScreen`'s `running` flag gates the Run button). Would need
+  a real queue (`List<ApprovalRequest>` shown one at a time, or a proper multi-request sheet UI)
+  before this app could ever run two goals concurrently.
+
+- **Gmail/Telegram plugin results bypass `InjectionFilter` before reaching `toolResults`** — found
+  2026-07-13 during T-167's codebase audit. `InjectionFilter.wrap`'s own doc says it "must be the
+  only path by which [screen/notification] text enters the Brain's context" — but `GmailPlugin`'s
+  `readMessage`/`listMessages` (real email subject/sender/snippet) and `TelegramPlugin`'s message
+  text both return raw, unwrapped external text via `ToolResult.resultJson`, which `ExecutorAgent`
+  stores directly into `AgentState.toolResults`. Currently harmless: nothing folds `toolResults`
+  back into a later LLM prompt anywhere in the graph today (confirmed via `PlannerAgent`/`ChatAgent`
+  — neither reads `s.toolResults`). Would become a real prompt-injection surface the moment anything
+  does (e.g. a future "summarize what happened" step, or `ContextBuilder`'s still-unbuilt tool-result
+  section per its own BACKLOG.md entry above) — whoever builds that should route `toolResults`
+  through `InjectionFilter.wrap` first, or wrap at the plugin boundary directly.

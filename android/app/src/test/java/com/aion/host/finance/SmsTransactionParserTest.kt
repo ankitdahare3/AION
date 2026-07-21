@@ -10,7 +10,10 @@ class SmsTransactionParserTest {
 
     @Test
     fun `swiggy debit is parsed as FOOD`() {
-        val result = SmsTransactionParser.parse(sms("Rs.450.00 debited from A/c XX1234 for UPI/SWIGGY on 12-07-26. Avl Bal Rs.12,340.00"))
+        val result =
+            SmsTransactionParser.parse(
+                sms("Rs.450.00 debited from A/c XX1234 for UPI/SWIGGY on 12-07-26. Avl Bal Rs.12,340.00"),
+            )
 
         assertEquals(450.00, result?.amount)
         assertEquals(TransactionDirection.DEBIT, result?.direction)

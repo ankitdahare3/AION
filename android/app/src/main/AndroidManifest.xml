@@ -41,6 +41,12 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
         </intent>
+        <!-- T-135's mic button resolveActivity() check (ChatScreen.kt) needs this declared too,
+             same package-visibility reason as the MAIN query above — without it, a real recognizer
+             app on the device still resolves to null on API 30+. -->
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
     </queries>
 
     <application

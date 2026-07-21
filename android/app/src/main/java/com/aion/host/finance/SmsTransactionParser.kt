@@ -3,6 +3,7 @@ package com.aion.host.finance
 import com.aion.host.communications.SmsItem
 
 enum class TransactionDirection { DEBIT, CREDIT }
+
 enum class TransactionCategory { FOOD, SHOPPING, SALARY, OTHER }
 
 data class SmsTransaction(
@@ -30,7 +31,13 @@ object SmsTransactionParser {
     fun parse(sms: SmsItem): SmsTransaction? {
         val lower = sms.body.lowercase()
 
-        val amount = AMOUNT_REGEX.find(lower)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull() ?: return null
+        val amount =
+            AMOUNT_REGEX
+                .find(lower)
+                ?.groupValues
+                ?.get(1)
+                ?.replace(",", "")
+                ?.toDoubleOrNull() ?: return null
 
         val isCredit = CREDIT_KEYWORDS.any { lower.contains(it) }
         val isDebit = DEBIT_KEYWORDS.any { lower.contains(it) }

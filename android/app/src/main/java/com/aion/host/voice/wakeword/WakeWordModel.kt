@@ -26,7 +26,8 @@ internal class WakeWordModel(
 
     /** [features] must be a flat `expectedFrames * 96` array, oldest-first (see [AudioFeatures.features]). */
     fun score(features: FloatArray): Float {
-        OnnxTensor.createTensor(env, FloatBuffer.wrap(features), longArrayOf(1, expectedFrames.toLong(), 96)).use { input ->
+        val shape = longArrayOf(1, expectedFrames.toLong(), 96)
+        OnnxTensor.createTensor(env, FloatBuffer.wrap(features), shape).use { input ->
             session.run(mapOf(inputName to input)).use { result ->
                 return (result.get(outputName).get() as OnnxTensor).floatBuffer.get(0)
             }

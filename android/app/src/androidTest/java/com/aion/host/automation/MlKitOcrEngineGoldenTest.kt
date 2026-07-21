@@ -41,7 +41,8 @@ class MlKitOcrEngineGoldenTest {
     fun screen1Home() = assertContainsAll(recognize("screen1_home.png"), "Jul")
 
     @Test
-    fun screen2Settings() = assertContainsAll(recognize("screen2_settings.png"), "Settings", "Network & internet", "Battery")
+    fun screen2Settings() =
+        assertContainsAll(recognize("screen2_settings.png"), "Settings", "Network & internet", "Battery")
 
     @Test
     fun screen3Wifi() = assertContainsAll(recognize("screen3_wifi.png"), "Internet", "Wi-Fi", "AndroidWifi")
@@ -53,7 +54,8 @@ class MlKitOcrEngineGoldenTest {
     fun screen5Battery() = assertContainsAll(recognize("screen5_battery.png"), "Battery Saver", "Turn off when charged")
 
     @Test
-    fun screen6Accessibility() = assertContainsAll(recognize("screen6_accessibility.png"), "Accessibility", "Magnification")
+    fun screen6Accessibility() =
+        assertContainsAll(recognize("screen6_accessibility.png"), "Accessibility", "Magnification")
 
     @Test
     fun screen7About() = assertContainsAll(recognize("screen7_about.png"), "About emulated", "Device name", "Model")

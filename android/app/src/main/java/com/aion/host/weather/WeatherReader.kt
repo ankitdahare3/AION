@@ -37,7 +37,9 @@ private data class OpenMeteoResponse(
  * over a paid provider, and the device's own last-known location over a hardcoded/user-typed city.
  * `ACCESS_COARSE_LOCATION` is enough — weather doesn't need GPS-grade precision.
  */
-class WeatherReader(private val context: Context) {
+class WeatherReader(
+    private val context: Context,
+) {
     /** Real last-known location from whichever provider has one; null if none granted/available —
      * this is a bare read, not a fresh location request (no FusedLocationProviderClient dependency
      * for one weather lookup). */
@@ -55,11 +57,13 @@ class WeatherReader(private val context: Context) {
                 } catch (e: SecurityException) {
                     null
                 }
-            }
-            .maxByOrNull { it.time }
+            }.maxByOrNull { it.time }
     }
 
-    suspend fun currentWeather(latitude: Double, longitude: Double): WeatherReading {
+    suspend fun currentWeather(
+        latitude: Double,
+        longitude: Double,
+    ): WeatherReading {
         val client = defaultProviderHttpClient()
         val response =
             client
@@ -67,8 +71,7 @@ class WeatherReader(private val context: Context) {
                     parameter("latitude", latitude)
                     parameter("longitude", longitude)
                     parameter("current", "temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m")
-                }
-                .body<OpenMeteoResponse>()
+                }.body<OpenMeteoResponse>()
         client.close()
         return WeatherReading(
             temperatureC = response.current.temperature_2m,
