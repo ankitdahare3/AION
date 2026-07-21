@@ -91,7 +91,7 @@ fun TranslateScreen(modifier: Modifier = Modifier) {
                 Text(
                     "Translating… (first use for this language pair downloads a small offline model)",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AionColors.OnSurfaceMuted,
+                    color = AionColors.OnSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             is TranslateUiState.Done ->
@@ -125,13 +125,13 @@ private fun LanguagePicker(
     onSelect: (SupportedLanguage) -> Unit,
 ) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = AionColors.OnSurfaceMuted)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = AionColors.OnSurfaceVariant)
         Row {
             SupportedLanguage.entries.forEach { lang ->
                 TextButton(onClick = { onSelect(lang) }) {
                     Text(
                         lang.label,
-                        color = if (lang == selected) AionColors.Primary else AionColors.OnSurfaceMuted,
+                        color = if (lang == selected) AionColors.Primary else AionColors.OnSurfaceVariant,
                     )
                 }
             }

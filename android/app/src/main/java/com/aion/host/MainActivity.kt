@@ -22,6 +22,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -63,6 +68,8 @@ import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
 import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.translate.TranslateScreen
+import com.aion.host.ui.theme.AionBottomNav
+import com.aion.host.ui.theme.AionNavItem
 import com.aion.host.ui.theme.AionTheme
 import com.aion.host.usage.UsageStatsScreen
 import com.aion.host.voice.VoiceForegroundService
@@ -367,6 +374,36 @@ private fun AionApp(
                                 modifier = Modifier.weight(1f),
                             )
                     }
+                    // T-168 — the persistent glass bottom bar + glowing mic orb every Stitch mockup
+                    // screen shares. Wired to the 5 real screens closest to the mockup's own 5 icons
+                    // rather than the mockup's literal (often fantasy) icon set — Files/Notifications
+                    // don't have dedicated real screens yet, so this points at the closest genuine
+                    // equivalents (Setup as a utility hub, Audit Log as the real activity feed).
+                    AionBottomNav(
+                        left =
+                            listOf(
+                                AionNavItem(Icons.Filled.Home, "Home", screen == Screen.HOME) { screen = Screen.HOME },
+                                AionNavItem(
+                                    Icons.Filled.Apps,
+                                    "Apps",
+                                    screen == Screen.SETUP,
+                                ) { screen = Screen.SETUP },
+                            ),
+                        right =
+                            listOf(
+                                AionNavItem(
+                                    Icons.Filled.Notifications,
+                                    "Alerts",
+                                    screen == Screen.AUDIT_LOG,
+                                ) { screen = Screen.AUDIT_LOG },
+                                AionNavItem(
+                                    Icons.Filled.Settings,
+                                    "Settings",
+                                    screen == Screen.API_KEYS,
+                                ) { screen = Screen.API_KEYS },
+                            ),
+                        onMicClick = { screen = Screen.CHAT },
+                    )
                 }
                 // SR-01/02 — sits above everything else; shows itself only when a side-effect
                 // action is actually pending approval (none exist yet, ExecutorAgent is T-051).

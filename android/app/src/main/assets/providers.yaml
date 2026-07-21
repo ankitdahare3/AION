@@ -1,17 +1,15 @@
-# DOC-013 §1 — launch-set provider registry. Adapters (T-031) read this to build the actual
-# Provider instances passed to ProviderRouter; this file alone changes nothing in-app.
+# DOC-013 §1 — launch-set provider registry. ProvidersModule (T-167) reads this file directly and
+# builds one real Provider per entry that has BOTH a real adapter for its `kind` and a configured
+# key in SecretVault — this file alone now genuinely drives the registry (NFR-10), not just docs.
+#
+# Only `kind: openai_compat` and `kind: google` have a real adapter today (OpenAiCompatProvider,
+# GeminiProvider) — an entry with any other `kind` would be honest about being unbuilt, not
+# silently wrong, but there are none right now: `local`/`anthropic`/on-device-LAN entries were
+# removed here rather than left unbuilt-but-listed, since that mismatch (file claims a provider is
+# configured; nothing in code can actually build one) is exactly the bug this file used to have.
+# Adding real support for any of those back means writing the adapter class first (see
+# BACKLOG.md), then re-adding the entry — not the other way around.
 providers:
-  - id: local-llamacpp
-    kind: local
-    models: [qwen3-4b-int4]
-    caps:
-      vision: false
-      tools: true
-      context: 8192
-      stream: true
-    tier: local
-    privacy: on_device
-
   - id: groq
     kind: openai_compat
     endpoint: https://api.groq.com/openai/v1
@@ -20,16 +18,13 @@ providers:
       tools: true
       context: 32768
       stream: true
-    cost:
-      in: 0.05
-      out: 0.08
     tier: free
     privacy: cloud
 
-  - id: openrouter-free
+  - id: openrouter
     kind: openai_compat
     endpoint: https://openrouter.ai/api/v1
-    models: [meta-llama/llama-3.3-70b-instruct:free]
+    models: [tencent/hy3:free]
     caps:
       tools: true
       context: 32768
@@ -37,10 +32,26 @@ providers:
     tier: free
     privacy: cloud
 
+  - id: nvidia
+    kind: openai_compat
+    endpoint: https://integrate.api.nvidia.com/v1
+    # The 70B variant hung indefinitely on this account (verified via direct curl) — this 8B one
+    # responds in well under a second; swap once the larger one's availability is confirmed.
+    models: [meta/llama-3.1-8b-instruct]
+    caps:
+      tools: true
+      context: 8192
+      stream: true
+    tier: free
+    privacy: cloud
+
   - id: gemini
     kind: google
     endpoint: https://generativelanguage.googleapis.com/v1beta
-    models: [gemini-2.5-flash]
+    # gemini-2.5-flash 404s as "no longer available to new users" on this key (verified via direct
+    # curl); 2.0-flash is the broadest-available fallback. Real metered API — PAID, not FREE, so
+    # ScoringMath's daily budget cap actually applies to it (T-167 finding).
+    models: [gemini-2.0-flash]
     caps:
       vision: true
       tools: true
@@ -67,21 +78,6 @@ providers:
     tier: paid
     privacy: cloud
 
-  - id: anthropic
-    kind: anthropic
-    endpoint: https://api.anthropic.com/v1
-    models: [claude-haiku-4-5]
-    caps:
-      vision: true
-      tools: true
-      context: 200000
-      stream: true
-    cost:
-      in: 1.00
-      out: 5.00
-    tier: paid
-    privacy: cloud
-
   - id: deepseek
     kind: openai_compat
     endpoint: https://api.deepseek.com/v1
@@ -95,14 +91,3 @@ providers:
       out: 0.42
     tier: paid
     privacy: cloud
-
-  - id: ollama-lan
-    kind: openai_compat
-    endpoint: http://192.168.1.100:11434/v1
-    models: [llama3.1]
-    caps:
-      tools: true
-      context: 8192
-      stream: true
-    tier: free
-    privacy: on_device

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import java.text.DateFormat
 import java.util.Date
 
@@ -44,19 +44,25 @@ fun CommunicationsScreen(
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text("Communications", style = MaterialTheme.typography.headlineSmall, color = AionColors.OnBackground)
-        LazyColumn {
+        LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
             item {
                 Text(
                     "Recent Calls",
                     style = MaterialTheme.typography.titleMedium,
                     color = AionColors.OnBackground,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
                 )
             }
-            if (calls.isEmpty()) {
-                item { EmptyHint("No calls found, or Call Log access hasn't been granted yet (Setup screen).") }
-            } else {
-                items(calls) { call -> CallRow(call) }
+            item {
+                GlassPanel {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        if (calls.isEmpty()) {
+                            EmptyHint("No calls found, or Call Log access hasn't been granted yet (Setup screen).")
+                        } else {
+                            calls.forEach { call -> CallRow(call) }
+                        }
+                    }
+                }
             }
             item {
                 Text(
@@ -66,10 +72,16 @@ fun CommunicationsScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
                 )
             }
-            if (messages.isEmpty()) {
-                item { EmptyHint("No messages found, or SMS access hasn't been granted yet (Setup screen).") }
-            } else {
-                items(messages) { sms -> SmsRow(sms) }
+            item {
+                GlassPanel {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        if (messages.isEmpty()) {
+                            EmptyHint("No messages found, or SMS access hasn't been granted yet (Setup screen).")
+                        } else {
+                            messages.forEach { sms -> SmsRow(sms) }
+                        }
+                    }
+                }
             }
         }
     }
@@ -77,7 +89,7 @@ fun CommunicationsScreen(
 
 @Composable
 private fun EmptyHint(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = AionColors.OnSurfaceMuted)
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = AionColors.OnSurfaceVariant)
 }
 
 @Composable
@@ -88,16 +100,16 @@ private fun CallRow(call: CallLogItem) {
             Text(
                 call.direction.name.lowercase(),
                 style = MaterialTheme.typography.bodySmall,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
             )
         }
         Text(
             dateTimeFormat.format(Date(call.timestampMs)),
             style = MaterialTheme.typography.bodySmall,
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
         )
     }
-    HorizontalDivider()
+    HorizontalDivider(color = AionColors.OutlineVariant)
 }
 
 @Composable
@@ -108,16 +120,16 @@ private fun SmsRow(sms: SmsItem) {
             Text(
                 sms.body.take(60),
                 style = MaterialTheme.typography.bodySmall,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
             )
         }
         Text(
             dateTimeFormat.format(Date(sms.timestampMs)),
             style = MaterialTheme.typography.bodySmall,
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
         )
     }
-    HorizontalDivider()
+    HorizontalDivider(color = AionColors.OutlineVariant)
 }
 
 private val dateTimeFormat: DateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)

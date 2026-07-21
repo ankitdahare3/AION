@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import java.text.DateFormat
 import java.util.Date
 
@@ -45,12 +46,14 @@ fun CalendarScreen(
             Text(
                 "No events found — either your day is free, or Calendar access hasn't been granted yet (Setup screen).",
                 style = MaterialTheme.typography.bodyMedium,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else {
-            LazyColumn {
-                items(events) { event -> EventRow(event) }
+            GlassPanel(modifier = Modifier.padding(top = 16.dp)) {
+                LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    items(events) { event -> EventRow(event) }
+                }
             }
         }
     }
@@ -62,12 +65,12 @@ private fun EventRow(event: CalendarEvent) {
         Text(
             if (event.allDay) "All day" else timeFormat.format(Date(event.startMs)),
             style = MaterialTheme.typography.labelLarge,
-            color = AionColors.Primary,
+            color = AionColors.Glow,
             modifier = Modifier.padding(end = 12.dp),
         )
         Text(event.title, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
     }
-    HorizontalDivider()
+    HorizontalDivider(color = AionColors.OutlineVariant)
 }
 
 private val timeFormat: DateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)

@@ -54,7 +54,7 @@ fun FinanceScreen(
             Text(
                 "No Swiggy/Amazon/salary SMS found, or SMS access hasn't been granted yet (Setup screen).",
                 style = MaterialTheme.typography.bodyMedium,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else {
@@ -68,7 +68,7 @@ fun FinanceScreen(
                 Text(
                     "Received: ${formatRupees(totalCredit)}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = AionColors.Success,
+                    color = AionColors.SecurityGreen,
                 )
             }
             LazyColumn { items(transactions) { TransactionRow(it) } }
@@ -88,13 +88,13 @@ private fun TransactionRow(txn: SmsTransaction) {
             Text(
                 dateTimeFormat.format(Date(txn.timestampMs)),
                 style = MaterialTheme.typography.bodySmall,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
             )
         }
         Text(
             (if (txn.direction == TransactionDirection.DEBIT) "-" else "+") + formatRupees(txn.amount),
             style = MaterialTheme.typography.bodyLarge,
-            color = if (txn.direction == TransactionDirection.DEBIT) AionColors.Error else AionColors.Success,
+            color = if (txn.direction == TransactionDirection.DEBIT) AionColors.Error else AionColors.SecurityGreen,
         )
     }
     HorizontalDivider()

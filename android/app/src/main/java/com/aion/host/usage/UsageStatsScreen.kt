@@ -43,14 +43,14 @@ fun UsageStatsScreen(
         Text(
             "Screen time: ${formatDuration(total)}",
             style = MaterialTheme.typography.bodyMedium,
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
         if (usage.isEmpty()) {
             Text(
                 "No usage data yet, or Usage Access hasn't been granted (Setup screen).",
                 style = MaterialTheme.typography.bodyMedium,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
             )
         } else {
             LazyColumn {
@@ -72,7 +72,7 @@ private fun AppUsageRow(app: AppUsage) {
         Text(
             formatDuration(app.foregroundMs),
             style = MaterialTheme.typography.bodyMedium,
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
         )
     }
     HorizontalDivider()

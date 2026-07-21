@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +37,7 @@ import com.aion.host.security.ProviderKey
 import com.aion.host.security.SecretVault
 import com.aion.host.setup.SetupPermission
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 
 /**
  * EPIC 16 (2026-07-13, owner-requested) — a real dashboard, not the mockup's illustrative
@@ -65,7 +70,7 @@ fun HomeScreen(
         Text(
             "Here's what's actually running right now.",
             style = MaterialTheme.typography.bodyMedium,
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
         )
 
@@ -83,7 +88,7 @@ fun HomeScreen(
             modifier = Modifier.padding(bottom = 8.dp),
         )
         if (recent.isEmpty()) {
-            Text("Nothing yet — actions you approve will show up here.", color = AionColors.OnSurfaceMuted)
+            Text("Nothing yet — actions you approve will show up here.", color = AionColors.OnSurfaceVariant)
         } else {
             recent.forEach { entry -> ActivityRow(entry) }
         }
@@ -97,15 +102,20 @@ fun HomeScreen(
                 modifier =
                     Modifier
                         .size(100.dp)
-                        .clip(CircleShape)
-                        .background(AionColors.SurfaceVariant)
+                        .shadow(
+                            elevation = 24.dp,
+                            shape = CircleShape,
+                            ambientColor = AionColors.Glow,
+                            spotColor = AionColors.Glow,
+                        ).clip(CircleShape)
+                        .background(Brush.radialGradient(listOf(AionColors.PrimaryContainer, AionColors.Surface)))
                         .clickable(onClick = onTapToSpeak),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("🎙", style = MaterialTheme.typography.displaySmall)
+                Icon(Icons.Filled.Mic, contentDescription = "Tap to talk to AION", tint = AionColors.OnPrimary)
             }
             Spacer(Modifier.height(12.dp))
-            Text("Tap to talk to AION", color = AionColors.OnSurfaceMuted)
+            Text("Tap to talk to AION", color = AionColors.OnSurfaceVariant)
         }
     }
 }
@@ -115,16 +125,11 @@ private fun StatusCard(
     label: String,
     value: String,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(AionColors.Surface)
-                .padding(16.dp),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = AionColors.OnSurfaceMuted)
-        Text(value, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
+    GlassPanel(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = AionColors.OnSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
+        }
     }
 }
 
@@ -137,7 +142,7 @@ private fun ActivityRow(entry: AuditLogEntry) {
         Text(entry.action, color = AionColors.OnBackground, style = MaterialTheme.typography.bodyMedium)
         Text(
             relativeTime(entry.ts),
-            color = AionColors.OnSurfaceMuted,
+            color = AionColors.OnSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.End,
         )

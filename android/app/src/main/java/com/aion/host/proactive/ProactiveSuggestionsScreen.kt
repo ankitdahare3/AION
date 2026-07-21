@@ -61,7 +61,7 @@ fun ProactiveSuggestionsScreen(
             Text(
                 "Nothing to flag right now — battery's fine, no event coming up, no long streak on screen.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = AionColors.OnSurfaceMuted,
+                color = AionColors.OnSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else {

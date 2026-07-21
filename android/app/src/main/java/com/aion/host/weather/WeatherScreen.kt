@@ -65,14 +65,14 @@ fun WeatherScreen(
                 Text(
                     "Loading…",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AionColors.OnSurfaceMuted,
+                    color = AionColors.OnSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             WeatherUiState.NoLocation ->
                 Text(
                     "No location available, or Location access hasn't been granted yet (Setup screen).",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AionColors.OnSurfaceMuted,
+                    color = AionColors.OnSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             is WeatherUiState.Failed ->
@@ -92,12 +92,12 @@ fun WeatherScreen(
                 Text(
                     s.reading.description,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = AionColors.OnSurfaceMuted,
+                    color = AionColors.OnSurfaceVariant,
                 )
                 Text(
                     "Humidity ${s.reading.humidityPercent}% · Wind ${s.reading.windSpeedKmh.toInt()} km/h",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AionColors.OnSurfaceMuted,
+                    color = AionColors.OnSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }

@@ -18,6 +18,12 @@ enum class ProviderKey(
     GEMINI("Gemini API Key", "gemini_api_key"),
     NVIDIA("NVIDIA API Key", "nvidia_api_key"),
 
+    // T-167 — providers.yaml (DOC-013 §1) already named these two as launch-set providers, and
+    // both use the existing OpenAiCompatProvider adapter (no new adapter class needed); the only
+    // reason they weren't real before was a missing key slot.
+    OPENAI("OpenAI API Key", "openai_api_key"),
+    DEEPSEEK("DeepSeek API Key", "deepseek_api_key"),
+
     // T-102 — GmailPlugin expects a bare OAuth2 access token (no client id/secret flow built here,
     // BACKLOG.md); TelegramPlugin expects a bot token from @BotFather, a single static secret.
     GMAIL_ACCESS_TOKEN("Gmail Access Token", "gmail_access_token"),
