@@ -2,6 +2,7 @@ package com.aion.host.weather
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 
 private sealed interface WeatherUiState {
     data object Loading : WeatherUiState
@@ -83,23 +85,26 @@ fun WeatherScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
             is WeatherUiState.Loaded -> {
-                Text(
-                    "${s.reading.temperatureC.toInt()}°C",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = AionColors.OnBackground,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-                Text(
-                    s.reading.description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AionColors.OnSurfaceVariant,
-                )
-                Text(
-                    "Humidity ${s.reading.humidityPercent}% · Wind ${s.reading.windSpeedKmh.toInt()} km/h",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AionColors.OnSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                GlassPanel(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "${s.reading.temperatureC.toInt()}°C",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = AionColors.OnBackground,
+                        )
+                        Text(
+                            s.reading.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AionColors.OnSurfaceVariant,
+                        )
+                        Text(
+                            "Humidity ${s.reading.humidityPercent}% · Wind ${s.reading.windSpeedKmh.toInt()} km/h",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AionColors.OnSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                }
             }
         }
     }

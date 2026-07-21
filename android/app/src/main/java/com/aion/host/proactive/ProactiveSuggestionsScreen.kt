@@ -2,14 +2,12 @@ package com.aion.host.proactive
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,12 +18,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.calendar.CalendarReader
 import com.aion.host.devicestatus.DeviceStatusReader
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import com.aion.host.usage.UsageStatsReader
 
 /** T-155 (EPIC 17, mockup #11) — wires the three real readers into [ProactiveSuggestionEngine].
@@ -78,30 +76,33 @@ private fun SuggestionCard(
     onOpenCalendar: () -> Unit,
     context: android.content.Context,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(AionColors.Surface)
-                .padding(16.dp),
-    ) {
-        Text(suggestion.message, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
-        // TAKE_A_BREAK has no real backend action to offer (no reminder-scheduling system exists
-        // yet) — showing it without a fake "Remind me" button that does nothing is the honest call.
-        when (suggestion.kind) {
-            SuggestionKind.BATTERY_LOW ->
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) }) {
-                        Text("Open Battery Settings")
+    GlassPanel(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(suggestion.message, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
+            // TAKE_A_BREAK has no real backend action to offer (no reminder-scheduling system
+            // exists yet) — showing it without a fake "Remind me" button that does nothing is the
+            // honest call.
+            when (suggestion.kind) {
+                SuggestionKind.BATTERY_LOW ->
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
+                        TextButton(
+                            onClick = { context.startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) },
+                        ) {
+                            Text("Open Battery Settings")
+                        }
                     }
-                }
-            SuggestionKind.UPCOMING_EVENT ->
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    TextButton(onClick = onOpenCalendar) { Text("View Calendar") }
-                }
-            SuggestionKind.TAKE_A_BREAK -> {}
+                SuggestionKind.UPCOMING_EVENT ->
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
+                        TextButton(onClick = onOpenCalendar) { Text("View Calendar") }
+                    }
+                SuggestionKind.TAKE_A_BREAK -> {}
+            }
         }
     }
 }

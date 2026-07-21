@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 
 /** T-154 (EPIC 17) — real today's screen-time breakdown (mockup #36). [resumeSignal] (same
  * pattern as CalendarScreen/CommunicationsScreen) re-reads after returning from the special-access
@@ -53,8 +54,10 @@ fun UsageStatsScreen(
                 color = AionColors.OnSurfaceVariant,
             )
         } else {
-            LazyColumn {
-                items(usage) { app -> AppUsageRow(app) }
+            GlassPanel {
+                LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    items(usage) { app -> AppUsageRow(app) }
+                }
             }
         }
     }
@@ -75,5 +78,5 @@ private fun AppUsageRow(app: AppUsage) {
             color = AionColors.OnSurfaceVariant,
         )
     }
-    HorizontalDivider()
+    HorizontalDivider(color = AionColors.OutlineVariant)
 }

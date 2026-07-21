@@ -1,12 +1,10 @@
 package com.aion.host.translate
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -19,9 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import kotlinx.coroutines.launch
 
 private sealed interface TranslateUiState {
@@ -95,18 +93,14 @@ fun TranslateScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 16.dp),
                 )
             is TranslateUiState.Done ->
-                Text(
-                    s.result,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AionColors.OnBackground,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(AionColors.Surface)
-                            .padding(16.dp),
-                )
+                GlassPanel(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                    Text(
+                        s.result,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AionColors.OnBackground,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
             is TranslateUiState.Failed ->
                 Text(
                     "Couldn't translate right now: ${s.message}",

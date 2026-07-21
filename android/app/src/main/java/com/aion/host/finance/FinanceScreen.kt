@@ -2,9 +2,11 @@ package com.aion.host.finance
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
@@ -21,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aion.host.communications.SmsReader
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,20 +61,30 @@ fun FinanceScreen(
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else {
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)) {
-                Text(
-                    "Spent: ${formatRupees(totalDebit)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AionColors.Error,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "Received: ${formatRupees(totalCredit)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AionColors.SecurityGreen,
-                )
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp)) {
+                GlassPanel(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Spent\n${formatRupees(totalDebit)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AionColors.Error,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                GlassPanel(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Received\n${formatRupees(totalCredit)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AionColors.SecurityGreen,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
             }
-            LazyColumn { items(transactions) { TransactionRow(it) } }
+            GlassPanel {
+                LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    items(transactions) { TransactionRow(it) }
+                }
+            }
         }
     }
 }
@@ -97,7 +110,7 @@ private fun TransactionRow(txn: SmsTransaction) {
             color = if (txn.direction == TransactionDirection.DEBIT) AionColors.Error else AionColors.SecurityGreen,
         )
     }
-    HorizontalDivider()
+    HorizontalDivider(color = AionColors.OutlineVariant)
 }
 
 private fun formatRupees(amount: Double): String = String.format(Locale.ROOT, "₹%,.2f", amount)

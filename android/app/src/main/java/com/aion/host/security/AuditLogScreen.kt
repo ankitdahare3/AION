@@ -22,11 +22,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import kotlinx.coroutines.launch
 
-/** DOC-017 §4 — audit log viewer with a live tamper-check against the hash chain. */
+/** DOC-017 §4 — audit log viewer with a live tamper-check against the hash chain (mockup: "tamper-proof audit log"). */
 @Composable
 fun AuditLogScreen(
     auditLogger: AuditLogger,
@@ -37,7 +38,7 @@ fun AuditLogScreen(
     val scope = rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text("Audit Log", style = MaterialTheme.typography.headlineSmall)
+        Text("Audit Log", style = MaterialTheme.typography.headlineSmall, color = AionColors.OnBackground)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(vertical = 8.dp),
@@ -47,25 +48,36 @@ fun AuditLogScreen(
             }
             Spacer(modifier = Modifier.width(12.dp))
             when (chainValid) {
-                true -> Text("Intact", color = Color(0xFF2E7D32))
-                false -> Text("TAMPERED", color = Color(0xFFC62828))
+                true -> Text("Intact", color = AionColors.SecurityGreen)
+                false -> Text("TAMPERED", color = AionColors.Error)
                 null -> {}
             }
         }
         if (entries.isEmpty()) {
-            Text("No entries yet.", style = MaterialTheme.typography.bodyMedium)
+            Text("No entries yet.", style = MaterialTheme.typography.bodyMedium, color = AionColors.OnSurfaceVariant)
         } else {
-            LazyColumn {
-                items(entries) { entry ->
-                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Text("${entry.actor} → ${entry.action}", style = MaterialTheme.typography.bodyLarge)
-                        Text(entry.payloadJson, style = MaterialTheme.typography.bodySmall)
-                        Text(
-                            "seq=${entry.seq}  hash=${entry.hash.take(12)}…",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
+            GlassPanel {
+                LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    items(entries) { entry ->
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Text(
+                                "${entry.actor} → ${entry.action}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = AionColors.OnBackground,
+                            )
+                            Text(
+                                entry.payloadJson,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AionColors.OnSurfaceVariant,
+                            )
+                            Text(
+                                "seq=${entry.seq}  hash=${entry.hash.take(12)}…",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AionColors.OnSurfaceVariant,
+                            )
+                        }
+                        HorizontalDivider(color = AionColors.OutlineVariant)
                     }
-                    HorizontalDivider()
                 }
             }
         }

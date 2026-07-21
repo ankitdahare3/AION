@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.GlassPanel
 import kotlinx.coroutines.launch
 
 /** T-024 — API keys settings screen. Values only ever touch [SecretVault]; never logged (SR-08). */
@@ -38,10 +40,11 @@ fun SecretsScreen(
     // already added 2 more rows to what was originally a 3-row screen); without scroll, rows past
     // the viewport are genuinely unreachable, found while entering real keys for the first time.
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text("API Keys", style = MaterialTheme.typography.headlineSmall)
+        Text("API Keys", style = MaterialTheme.typography.headlineSmall, color = AionColors.OnBackground)
         Text(
             "Stored only in Android Keystore-backed encrypted storage on this device.",
             style = MaterialTheme.typography.bodySmall,
+            color = AionColors.OnSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
         ProviderKey.entries.forEach { providerKey ->
@@ -63,30 +66,32 @@ private fun ProviderKeyRow(
     var value by remember { mutableStateOf(secretVault.get(providerKey) ?: "") }
     var saved by remember { mutableStateOf(secretVault.has(providerKey)) }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                value = it
-                saved = false
-            },
-            label = { Text(providerKey.label) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Button(onClick = {
-                secretVault.put(providerKey, value)
-                saved = true
-                onSaved()
-            }) { Text("Save") }
-            if (saved) {
-                Text("Saved", modifier = Modifier.padding(start = 12.dp))
+    GlassPanel(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {
+                    value = it
+                    saved = false
+                },
+                label = { Text(providerKey.label) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(onClick = {
+                    secretVault.put(providerKey, value)
+                    saved = true
+                    onSaved()
+                }) { Text("Save") }
+                if (saved) {
+                    Text("Saved", color = AionColors.SecurityGreen, modifier = Modifier.padding(start = 12.dp))
+                }
             }
         }
     }
