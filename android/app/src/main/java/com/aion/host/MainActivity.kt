@@ -55,11 +55,30 @@ import com.aion.host.brain.BuiltInPluginRegistry
 import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.brain.RealApprovalGate
+import com.aion.host.brain.RoomCheckpointer
+import com.aion.host.brain.VoiceCommandHistoryScreen
 import com.aion.host.calendar.CalendarScreen
 import com.aion.host.communications.CommunicationsScreen
 import com.aion.host.devicestatus.DeviceStatusScreen
 import com.aion.host.finance.FinanceScreen
+import com.aion.host.memory.MemoryGraphScreen
 import com.aion.host.memory.MemoryTimelineScreen
+import com.aion.host.mockup.AgentsScreen
+import com.aion.host.mockup.AiLearningScreen
+import com.aion.host.mockup.BackupRestoreScreen
+import com.aion.host.mockup.ClipboardNotesScreen
+import com.aion.host.mockup.ContextOverlayScreen
+import com.aion.host.mockup.DownloadsUpdatesScreen
+import com.aion.host.mockup.HabitsGoalsScreen
+import com.aion.host.mockup.HealthWellnessScreen
+import com.aion.host.mockup.HolographicModeScreen
+import com.aion.host.mockup.MediaStudioScreen
+import com.aion.host.mockup.OrbOverlayScreen
+import com.aion.host.mockup.ShortcutsScreen
+import com.aion.host.mockup.SmartAutomationsScreen
+import com.aion.host.mockup.SmartHomeScreen
+import com.aion.host.mockup.TravelModeScreen
+import com.aion.host.mockup.VisionModeScreen
 import com.aion.host.notifications.NotificationsScreen
 import com.aion.host.proactive.ProactiveSuggestionsScreen
 import com.aion.host.security.AppLockGate
@@ -102,6 +121,25 @@ private enum class Screen {
     MEMORY_TIMELINE,
     NOTIFICATIONS,
     SECURITY_CENTER,
+    AGENTS,
+    SMART_AUTOMATIONS,
+    MEMORY_GRAPH,
+    SMART_HOME,
+    MEDIA_STUDIO,
+    VISION_MODE,
+    CONTEXT_OVERLAY,
+    ORB_OVERLAY,
+    TRAVEL_MODE,
+    HEALTH_WELLNESS,
+    HABITS_GOALS,
+    HOLOGRAPHIC_MODE,
+    BACKUP_RESTORE,
+    DOWNLOADS_UPDATES,
+    SHORTCUTS,
+    CLIPBOARD_NOTES,
+    AI_LEARNING,
+    VOICE_COMMAND_HISTORY,
+    APPS_HUB,
 }
 
 /**
@@ -139,6 +177,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var memoryStore: MemoryStore
 
+    @Inject
+    lateinit var checkpointer: RoomCheckpointer
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,6 +208,7 @@ class MainActivity : FragmentActivity() {
                     realApprovalGate,
                     killSwitch,
                     memoryStore,
+                    checkpointer,
                 )
             } else {
                 LockScreen(onUnlockTap = {
@@ -217,6 +259,7 @@ private fun AionApp(
     realApprovalGate: RealApprovalGate,
     killSwitch: KillSwitch,
     memoryStore: MemoryStore,
+    checkpointer: RoomCheckpointer,
 ) {
     // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
@@ -418,6 +461,52 @@ private fun AionApp(
                             NotificationsScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
                         Screen.SECURITY_CENTER ->
                             SecurityCenterScreen(auditLogger, killSwitch, modifier = Modifier.weight(1f))
+                        Screen.AGENTS -> AgentsScreen(modifier = Modifier.weight(1f))
+                        Screen.SMART_AUTOMATIONS -> SmartAutomationsScreen(modifier = Modifier.weight(1f))
+                        Screen.MEMORY_GRAPH ->
+                            MemoryGraphScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.SMART_HOME -> SmartHomeScreen(modifier = Modifier.weight(1f))
+                        Screen.MEDIA_STUDIO -> MediaStudioScreen(modifier = Modifier.weight(1f))
+                        Screen.VISION_MODE -> VisionModeScreen(modifier = Modifier.weight(1f))
+                        Screen.CONTEXT_OVERLAY -> ContextOverlayScreen(modifier = Modifier.weight(1f))
+                        Screen.ORB_OVERLAY -> OrbOverlayScreen(modifier = Modifier.weight(1f))
+                        Screen.TRAVEL_MODE -> TravelModeScreen(modifier = Modifier.weight(1f))
+                        Screen.HEALTH_WELLNESS -> HealthWellnessScreen(modifier = Modifier.weight(1f))
+                        Screen.HABITS_GOALS -> HabitsGoalsScreen(modifier = Modifier.weight(1f))
+                        Screen.HOLOGRAPHIC_MODE -> HolographicModeScreen(modifier = Modifier.weight(1f))
+                        Screen.BACKUP_RESTORE -> BackupRestoreScreen(modifier = Modifier.weight(1f))
+                        Screen.DOWNLOADS_UPDATES -> DownloadsUpdatesScreen(modifier = Modifier.weight(1f))
+                        Screen.SHORTCUTS -> ShortcutsScreen(modifier = Modifier.weight(1f))
+                        Screen.CLIPBOARD_NOTES -> ClipboardNotesScreen(modifier = Modifier.weight(1f))
+                        Screen.AI_LEARNING -> AiLearningScreen(modifier = Modifier.weight(1f))
+                        Screen.VOICE_COMMAND_HISTORY ->
+                            VoiceCommandHistoryScreen(checkpointer, resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.APPS_HUB ->
+                            AppsHubScreen(
+                                destinations =
+                                    listOf(
+                                        "Setup" to { screen = Screen.SETUP },
+                                        "Agents" to { screen = Screen.AGENTS },
+                                        "Automations" to { screen = Screen.SMART_AUTOMATIONS },
+                                        "Memory Graph" to { screen = Screen.MEMORY_GRAPH },
+                                        "Smart Home" to { screen = Screen.SMART_HOME },
+                                        "AI Studio" to { screen = Screen.MEDIA_STUDIO },
+                                        "Vision Mode" to { screen = Screen.VISION_MODE },
+                                        "Context Overlay" to { screen = Screen.CONTEXT_OVERLAY },
+                                        "Global Orb Overlay" to { screen = Screen.ORB_OVERLAY },
+                                        "Travel Mode" to { screen = Screen.TRAVEL_MODE },
+                                        "Health & Wellness" to { screen = Screen.HEALTH_WELLNESS },
+                                        "Habits & Goals" to { screen = Screen.HABITS_GOALS },
+                                        "Holographic Mode" to { screen = Screen.HOLOGRAPHIC_MODE },
+                                        "Backup & Restore" to { screen = Screen.BACKUP_RESTORE },
+                                        "Downloads & Updates" to { screen = Screen.DOWNLOADS_UPDATES },
+                                        "Shortcuts" to { screen = Screen.SHORTCUTS },
+                                        "Clipboard & Notes" to { screen = Screen.CLIPBOARD_NOTES },
+                                        "AION Learning" to { screen = Screen.AI_LEARNING },
+                                        "Voice Command History" to { screen = Screen.VOICE_COMMAND_HISTORY },
+                                    ),
+                                modifier = Modifier.weight(1f),
+                            )
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,
@@ -429,9 +518,8 @@ private fun AionApp(
                             )
                     }
                     // T-168 — the persistent glass bottom bar + glowing mic orb every Stitch mockup
-                    // screen shares. Wired to the 5 real screens closest to the mockup's own 5
-                    // icons rather than the mockup's literal (often fantasy) icon set — Setup
-                    // doubles as the "Apps" utility hub since Files has no dedicated real screen yet.
+                    // screen shares. "Apps" opens AppsHubScreen — every screen this import pass
+                    // added (real and illustrative) lives there instead of bloating the debug row.
                     AionBottomNav(
                         left =
                             listOf(
@@ -439,8 +527,8 @@ private fun AionApp(
                                 AionNavItem(
                                     Icons.Filled.Apps,
                                     "Apps",
-                                    screen == Screen.SETUP,
-                                ) { screen = Screen.SETUP },
+                                    screen == Screen.APPS_HUB,
+                                ) { screen = Screen.APPS_HUB },
                             ),
                         right =
                             listOf(

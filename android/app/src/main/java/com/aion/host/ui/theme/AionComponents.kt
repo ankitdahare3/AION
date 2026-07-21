@@ -3,6 +3,7 @@ package com.aion.host.ui.theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -157,6 +158,69 @@ private fun NavIcon(
             Icon(item.icon, contentDescription = item.label, tint = tint)
             Text(item.label, style = MaterialTheme.typography.labelSmall, color = tint)
         }
+    }
+}
+
+/**
+ * A titled row with a horizontal progress bar (Stitch's "Research Agent 92%"-style rows —
+ * Agents Dashboard, Skills, Performance Monitor). [progress] is 0f..1f.
+ */
+@Composable
+fun ProgressRow(
+    label: String,
+    progress: Float,
+    modifier: Modifier = Modifier,
+    trailingText: String = "${(progress * 100).toInt()}%",
+) {
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = AionColors.OnBackground)
+            Text(trailingText, style = MaterialTheme.typography.bodyMedium, color = AionColors.Glow)
+        }
+        Spacer(Modifier.height(6.dp))
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(AionColors.SurfaceVariant),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(AionColors.Glow),
+            )
+        }
+    }
+}
+
+/**
+ * A screen built only to visually match a Stitch mockup for a feature AION doesn't actually have
+ * yet (no real backend: multi-agent orchestration, smart-home control, health tracking, etc.).
+ * [note] is the one honest line every such screen carries, same spirit as `ProactiveSuggestions`'
+ * "no fake Remind-me button" rule — this doesn't fabricate a REAL action or real device state, it
+ * just shows what the design looks like.
+ */
+@Composable
+fun IllustrativeScreen(
+    title: String,
+    note: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Text(title, style = MaterialTheme.typography.headlineSmall, color = AionColors.OnBackground)
+        Text(
+            note,
+            style = MaterialTheme.typography.bodySmall,
+            color = AionColors.OnSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+        content()
     }
 }
 

@@ -23,6 +23,9 @@ class RoomCheckpointer
         // internal + var so tests can substitute a TestDispatcher-backed scope, same reasoning as RoomScoreStore.
         internal var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+        /** T-168 (Voice Command History screen) — real past runs, terminal state only. */
+        suspend fun recentCompletedRuns(limit: Int = 50): List<GraphCheckpointEntity> = dao.getRecentCompleted(limit)
+
         override fun save(s: AgentState) {
             val entity =
                 GraphCheckpointEntity(

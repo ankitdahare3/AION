@@ -36,4 +36,7 @@ class FakeGraphCheckpointDao : GraphCheckpointDao {
     }
 
     override suspend fun getForGoal(goal: String): List<GraphCheckpointEntity> = saved.filter { it.goal == goal }
+
+    override suspend fun getRecentCompleted(limit: Int): List<GraphCheckpointEntity> =
+        saved.filter { it.done }.sortedByDescending { it.id }.take(limit)
 }

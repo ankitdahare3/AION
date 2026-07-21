@@ -29,4 +29,8 @@ interface GraphCheckpointDao {
 
     @Query("SELECT * FROM graph_checkpoint WHERE goal = :goal ORDER BY id ASC")
     suspend fun getForGoal(goal: String): List<GraphCheckpointEntity>
+
+    /** T-168 (Voice Command History screen) — only the terminal (`done=true`) checkpoint of each run, most recent first. */
+    @Query("SELECT * FROM graph_checkpoint WHERE done = 1 ORDER BY id DESC LIMIT :limit")
+    suspend fun getRecentCompleted(limit: Int): List<GraphCheckpointEntity>
 }
