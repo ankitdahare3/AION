@@ -71,6 +71,7 @@ import com.aion.host.security.KillSwitch
 import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
+import com.aion.host.security.SecurityCenterScreen
 import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.translate.TranslateScreen
 import com.aion.host.ui.theme.AionBottomNav
@@ -100,6 +101,7 @@ private enum class Screen {
     OFFLINE_STATUS,
     MEMORY_TIMELINE,
     NOTIFICATIONS,
+    SECURITY_CENTER,
 }
 
 /**
@@ -349,6 +351,11 @@ private fun AionApp(
                             Text(if (screen == Screen.NOTIFICATIONS) "Back to Home" else "Notifications")
                         }
                         TextButton(onClick = {
+                            screen = if (screen == Screen.SECURITY_CENTER) Screen.HOME else Screen.SECURITY_CENTER
+                        }) {
+                            Text(if (screen == Screen.SECURITY_CENTER) "Back to Home" else "Security Center")
+                        }
+                        TextButton(onClick = {
                             DeviceExplorationScheduler.triggerNow(context)
                             Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                         }) {
@@ -409,6 +416,8 @@ private fun AionApp(
                             MemoryTimelineScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
                         Screen.NOTIFICATIONS ->
                             NotificationsScreen(memoryStore, resumeSignal, modifier = Modifier.weight(1f))
+                        Screen.SECURITY_CENTER ->
+                            SecurityCenterScreen(auditLogger, killSwitch, modifier = Modifier.weight(1f))
                         Screen.CHAT ->
                             ChatScreen(
                                 graphFactory,
