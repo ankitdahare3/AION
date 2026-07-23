@@ -110,21 +110,24 @@ fun AionBottomNav(
 ) {
     val barShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
     Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .clip(barShape)
-                .background(AionColors.Surface.copy(alpha = 0.85f))
-                .border(1.dp, GlassBorderColor, barShape),
+        modifier = modifier.fillMaxWidth().height(80.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(barShape)
+                    .background(AionColors.Surface.copy(alpha = 0.85f))
+                    .border(1.dp, GlassBorderColor, barShape),
         ) {
-            left.forEach { NavIcon(it, Modifier.weight(1f)) }
-            Spacer(Modifier.width(56.dp))
-            right.forEach { NavIcon(it, Modifier.weight(1f)) }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                left.forEach { NavIcon(it, Modifier.weight(1f)) }
+                Spacer(Modifier.width(56.dp))
+                right.forEach { NavIcon(it, Modifier.weight(1f)) }
+            }
         }
         Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (-16).dp)) {
             Box(
@@ -287,9 +290,6 @@ fun AionTopBar(
  */
 @Composable
 fun MockupScaffold(
-    left: List<AionNavItem>,
-    right: List<AionNavItem>,
-    onMicClick: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
     onBack: (() -> Unit)? = null,
@@ -309,6 +309,5 @@ fun MockupScaffold(
                     .padding(horizontal = 20.dp),
             content = content,
         )
-        AionBottomNav(left, right, onMicClick)
     }
 }

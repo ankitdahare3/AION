@@ -5,20 +5,41 @@ import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,8 +49,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aion.brain.AgentState
 import com.aion.brain.ApprovalGate
@@ -37,33 +63,12 @@ import com.aion.brain.PluginManager
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ResponsePhrasing
 import com.aion.host.security.KillSwitch
+import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.AionTopBar
+import com.aion.host.ui.theme.GlassPanel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-/**
- * T-118 — the first way to actually give AION a goal from the app itself, since voice (EPIC 2)
- * doesn't exist yet and no other UI called [AionGraphFactory.create] before this. Runs the exact
- * same real graph [BenchmarkHarnessTest] already exercises — a real side-effect step still shows
- * the real [ApprovalSheetHost] overlay (T-021) and needs a real tap, same as any other run; nothing
- * here bypasses that.
- *
- * T-135 (ADR-011a) — the mic button uses the platform's own speech-recognizer Activity
- * ([RecognizerIntent.ACTION_RECOGNIZE_SPEECH]) rather than a custom [android.speech.SpeechRecognizer]
- * + microphone-level UI: it's a stepping stone toward the real ADR-011 voice stack (openWakeWord +
- * whisper.cpp), not the final answer, so the platform's own "Listening…" dialog is the right amount
- * of effort here. No language is forced via [RecognizerIntent.EXTRA_LANGUAGE] — the device's own
- * configured language (whatever the owner already set it to, hi-IN or en-IN) drives recognition,
- * matching how every other bilingual surface in this app (ResponsePhrasing) detects rather than
- * dictates language. Gracefully degrades (no crash) if no recognizer app is present, same pattern as
- * ShizukuBridge's "not available" path.
- *
- * T-136 (ADR-011a) — replies are read aloud via the platform's own [TextToSpeech], the same
- * stepping-stone scope as T-135's mic button (no custom audio pipeline). Language is picked via
- * [ResponsePhrasing.isHinglish] against the goal that was actually submitted — the same detection
- * this app already uses to decide which of ResponsePhrasing's own strings to show, so speech and
- * text always agree on language. A mute toggle silences it without touching the graph/response at
- * all, matching this screen's own "build the mechanism, don't gate the underlying feature" pattern.
- */
 @Composable
 fun ChatScreen(
     graphFactory: AionGraphFactory,
@@ -73,20 +78,14 @@ fun ChatScreen(
     killSwitch: KillSwitch,
     modifier: Modifier = Modifier,
 ) {
-    // Antigravity-audit finding, 2026-07-13: this was `remember`, so rotating the device or
-    // toggling dark mode (an Activity recreation either way) wiped the goal/reply mid-conversation.
-    // `rememberSaveable` survives both config changes and process death (Bundle-backed), not just
-    // in-memory recomposition — the actual bug, not a smaller stand-in for it.
     var goal by rememberSaveable { mutableStateOf("") }
     var submittedGoal by rememberSaveable { mutableStateOf("") }
     var response by rememberSaveable { mutableStateOf<String?>(null) }
-    // NOT rememberSaveable: `running=true` would restore across a recreation even though the
-    // in-flight coroutine (tied to the OLD rememberCoroutineScope, cancelled on recreation) is
-    // genuinely gone — that would strand the UI on "Running…" forever with no way to retry.
     var running by remember { mutableStateOf(false) }
     var muted by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
     val speechLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -112,67 +111,259 @@ fun ChatScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text("Talk to AION", style = MaterialTheme.typography.headlineSmall)
-        OutlinedTextField(
-            value = goal,
-            onValueChange = { goal = it },
-            label = { Text("What should AION do?") },
-            enabled = !running,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+    LaunchedEffect(response, submittedGoal, running) {
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
+    val submitGoal = {
+        if (goal.isNotBlank() && !running) {
+            submittedGoal = goal
+            goal = ""
+            running = true
+            response = null
+            scope.launch {
+                try {
+                    killSwitch.reset()
+                    val graph = graphFactory.create(router, pluginManager, approvalGate)
+                    val result = graph.run(AgentState(goal = submittedGoal))
+                    response = result.response
+                } catch (e: Exception) {
+                    response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
+                } finally {
+                    running = false
+                }
+            }
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(AionColors.Background)) {
+        // Atmospheric gradient
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            listOf(AionColors.PrimaryContainer.copy(alpha = 0.15f), Color.Transparent),
+                            radius = 1000f,
+                        ),
+                    ),
         )
-        Row(modifier = Modifier.padding(top = 12.dp)) {
-            Button(
-                onClick = {
-                    submittedGoal = goal
-                    running = true
-                    response = null
-                    scope.launch {
-                        try {
-                            // Safety-audit finding, 2026-07-13: a prior "aion stop"/overlay trigger
-                            // left KillSwitch.halted permanently true (nothing ever called reset()),
-                            // which would silently block every automation step of every future run.
-                            // Starting a new run is the owner's own signal that it's safe to resume.
-                            killSwitch.reset()
-                            val graph = graphFactory.create(router, pluginManager, approvalGate)
-                            val result = graph.run(AgentState(goal = goal))
-                            response = result.response
-                        } catch (e: Exception) {
-                            response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
-                        } finally {
-                            running = false
-                        }
-                    }
-                },
-                enabled = goal.isNotBlank() && !running,
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            AionTopBar(
+                title = "Talk to AION",
+                trailingIcon = Icons.Filled.Sensors,
+                onTrailingClick = { muted = !muted },
+            )
+
+            // Chat Area
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Text(if (running) "Running…" else "Run")
+                if (submittedGoal.isNotBlank()) {
+                    UserBubble(text = submittedGoal)
+                }
+                if (running) {
+                    AIBubble(text = "Thinking...")
+                } else if (response != null) {
+                    // Split response into simple actions vs text (mock parsing for visuals)
+                    // We'll just display it as an AI Bubble for now.
+                    AIBubble(text = response!!)
+                }
+
+                Spacer(Modifier.height(32.dp))
             }
-            Spacer(Modifier.width(8.dp))
-            Button(
-                onClick = {
-                    val intent =
-                        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "AION se boliye…")
-                        }
-                    if (intent.resolveActivity(context.packageManager) != null) {
-                        speechLauncher.launch(intent)
-                    } else {
-                        response = "Voice input isn't available on this device — no speech recognizer app found."
-                    }
-                },
-                enabled = !running,
+
+            // Input Area
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("🎤")
-            }
-            Spacer(Modifier.width(8.dp))
-            TextButton(onClick = { muted = !muted }) {
-                Text(if (muted) "🔇 Muted" else "🔊 Speak replies")
+                GlassPanel(
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    cornerRadius = 28.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = AionColors.OnSurfaceVariant)
+                        Spacer(Modifier.width(12.dp))
+                        BasicTextField(
+                            value = goal,
+                            onValueChange = { goal = it },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = AionColors.OnSurface),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { submitGoal() }),
+                            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                            decorationBox = { innerTextField ->
+                                if (goal.isEmpty()) {
+                                    Text(
+                                        "Type a goal...",
+                                        color = AionColors.OnSurfaceVariant.copy(alpha = 0.5f),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                }
+                                innerTextField()
+                            },
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Icon(
+                            Icons.Filled.Keyboard,
+                            contentDescription = null,
+                            tint = if (goal.isNotBlank()) AionColors.Primary else AionColors.OnSurfaceVariant,
+                            modifier = Modifier.clickable { submitGoal() },
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                MicButton(
+                    onClick = {
+                        val intent =
+                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(
+                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+                                )
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "AION se boliye…")
+                            }
+                        if (intent.resolveActivity(context.packageManager) != null) {
+                            speechLauncher.launch(intent)
+                        } else {
+                            response = "Voice input isn't available on this device — no speech recognizer app found."
+                        }
+                    },
+                )
             }
         }
-        response?.let {
-            Text(it, modifier = Modifier.padding(top = 16.dp))
+    }
+}
+
+@Composable
+private fun UserBubble(text: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.8f)
+                    .background(
+                        color = AionColors.PrimaryContainer.copy(alpha = 0.2f),
+                        shape =
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = 16.dp,
+                                bottomEnd = 0.dp,
+                            ),
+                    ).border(
+                        width = 1.dp,
+                        color = AionColors.PrimaryContainer.copy(alpha = 0.4f),
+                        shape =
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = 16.dp,
+                                bottomEnd = 0.dp,
+                            ),
+                    ).padding(20.dp),
+        ) {
+            Text(text = text, color = AionColors.OnBackground, style = MaterialTheme.typography.bodyLarge)
         }
+    }
+}
+
+@Composable
+private fun AIBubble(text: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.85f)
+                    .background(
+                        color = AionColors.SurfaceVariant.copy(alpha = 0.6f),
+                        shape =
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = 0.dp,
+                                bottomEnd = 16.dp,
+                            ),
+                    ).border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape =
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = 0.dp,
+                                bottomEnd = 16.dp,
+                            ),
+                    ).padding(20.dp),
+        ) {
+            Text(text = text, color = AionColors.OnSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
+@Composable
+private fun BlinkingLed() {
+    val transition = rememberInfiniteTransition(label = "led")
+    val alpha by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.4f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "ledAlpha",
+    )
+    Box(
+        modifier =
+            Modifier
+                .size(8.dp)
+                .shadow(4.dp, CircleShape, ambientColor = Color(0xFF4ADE80), spotColor = Color(0xFF4ADE80))
+                .background(Color(0xFF4ADE80).copy(alpha = alpha), CircleShape),
+    )
+}
+
+@Composable
+private fun MicButton(onClick: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "micPulse")
+    val shadowRadius by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 20f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "micShadow",
+    )
+
+    Box(
+        modifier =
+            Modifier
+                .size(56.dp)
+                .shadow(shadowRadius.dp, CircleShape, ambientColor = AionColors.Glow, spotColor = AionColors.Glow)
+                .background(AionColors.PrimaryContainer, CircleShape)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.Mic,
+            contentDescription = null,
+            tint = AionColors.OnPrimaryContainer,
+            modifier = Modifier.size(28.dp),
+        )
     }
 }

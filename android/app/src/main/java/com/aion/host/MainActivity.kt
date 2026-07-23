@@ -8,20 +8,16 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
@@ -31,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -91,6 +86,7 @@ import com.aion.host.security.KillSwitchOverlayService
 import com.aion.host.security.SecretVault
 import com.aion.host.security.SecretsScreen
 import com.aion.host.security.SecurityCenterScreen
+import com.aion.host.settings.SettingsScreen
 import com.aion.host.setup.SetupWizardScreen
 import com.aion.host.translate.TranslateScreen
 import com.aion.host.ui.theme.AionBottomNav
@@ -140,6 +136,7 @@ private enum class Screen {
     AI_LEARNING,
     VOICE_COMMAND_HISTORY,
     APPS_HUB,
+    SETTINGS,
 }
 
 /**
@@ -294,135 +291,6 @@ private fun AionApp(
         Surface(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // T-116 finding — 4 TextButtons with no width constraint overflow a real
-                    // phone's screen width (font-scale/density-dependent; never showed up on the
-                    // emulator's default settings). Without horizontalScroll, Compose's Row squeezes
-                    // the last child ("Explore Device") into a tall, narrow multi-line wrap instead
-                    // of just clipping — same "4th+ item unreachable" shape as SecretsScreen's T-120
-                    // vertical-scroll fix, here on the horizontal axis.
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(8.dp),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = { screen = Screen.HOME }) {
-                            Text("Home")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.SETUP) Screen.HOME else Screen.SETUP
-                        }) {
-                            Text(if (screen == Screen.SETUP) "Back to Home" else "Setup")
-                        }
-                        TextButton(onClick = {
-                            overlayRunning = !overlayRunning
-                            val intent = Intent(context, KillSwitchOverlayService::class.java)
-                            if (overlayRunning) context.startService(intent) else context.stopService(intent)
-                        }) {
-                            Text(if (overlayRunning) "Hide Kill-Switch" else "Show Kill-Switch")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.API_KEYS) Screen.HOME else Screen.API_KEYS
-                        }) {
-                            Text(if (screen == Screen.API_KEYS) "Back to Home" else "API Keys")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.AUDIT_LOG) Screen.HOME else Screen.AUDIT_LOG
-                        }) {
-                            Text(if (screen == Screen.AUDIT_LOG) "Back to Home" else "Audit Log")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.CALENDAR) Screen.HOME else Screen.CALENDAR
-                        }) {
-                            Text(if (screen == Screen.CALENDAR) "Back to Home" else "Calendar")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.COMMUNICATIONS) Screen.HOME else Screen.COMMUNICATIONS
-                        }) {
-                            Text(if (screen == Screen.COMMUNICATIONS) "Back to Home" else "Communications")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.DEVICE_STATUS) Screen.HOME else Screen.DEVICE_STATUS
-                        }) {
-                            Text(if (screen == Screen.DEVICE_STATUS) "Back to Home" else "Device Status")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.USAGE_STATS) Screen.HOME else Screen.USAGE_STATS
-                        }) {
-                            Text(if (screen == Screen.USAGE_STATS) "Back to Home" else "App Usage")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.PROACTIVE) Screen.HOME else Screen.PROACTIVE
-                        }) {
-                            Text(if (screen == Screen.PROACTIVE) "Back to Home" else "Suggestions")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.FINANCE) Screen.HOME else Screen.FINANCE
-                        }) {
-                            Text(if (screen == Screen.FINANCE) "Back to Home" else "Finance")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.WEATHER) Screen.HOME else Screen.WEATHER
-                        }) {
-                            Text(if (screen == Screen.WEATHER) "Back to Home" else "Weather")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.TRANSLATE) Screen.HOME else Screen.TRANSLATE
-                        }) {
-                            Text(if (screen == Screen.TRANSLATE) "Back to Home" else "Translate")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.ABOUT) Screen.HOME else Screen.ABOUT
-                        }) {
-                            Text(if (screen == Screen.ABOUT) "Back to Home" else "About")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.OFFLINE_STATUS) Screen.HOME else Screen.OFFLINE_STATUS
-                        }) {
-                            Text(if (screen == Screen.OFFLINE_STATUS) "Back to Home" else "Connectivity")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.MEMORY_TIMELINE) Screen.HOME else Screen.MEMORY_TIMELINE
-                        }) {
-                            Text(if (screen == Screen.MEMORY_TIMELINE) "Back to Home" else "Memory")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.NOTIFICATIONS) Screen.HOME else Screen.NOTIFICATIONS
-                        }) {
-                            Text(if (screen == Screen.NOTIFICATIONS) "Back to Home" else "Notifications")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.SECURITY_CENTER) Screen.HOME else Screen.SECURITY_CENTER
-                        }) {
-                            Text(if (screen == Screen.SECURITY_CENTER) "Back to Home" else "Security Center")
-                        }
-                        TextButton(onClick = {
-                            DeviceExplorationScheduler.triggerNow(context)
-                            Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Text("Explore Device")
-                        }
-                        TextButton(onClick = {
-                            screen = if (screen == Screen.CHAT) Screen.HOME else Screen.CHAT
-                        }) {
-                            Text(if (screen == Screen.CHAT) "Back to Home" else "Talk to AION")
-                        }
-                        // T-010 — manual toggle since VoiceSessionManager (T-015) doesn't exist yet
-                        // to decide when the FGS should run on its own.
-                        TextButton(onClick = {
-                            voiceRunning = !voiceRunning
-                            val intent = Intent(context, VoiceForegroundService::class.java)
-                            if (voiceRunning) {
-                                ContextCompat.startForegroundService(context, intent)
-                            } else {
-                                context.stopService(intent)
-                            }
-                        }) {
-                            Text(if (voiceRunning) "Stop Voice" else "Start Voice")
-                        }
-                    }
                     when (screen) {
                         Screen.HOME ->
                             HomeScreen(
@@ -430,6 +298,30 @@ private fun AionApp(
                                 secretVault,
                                 voiceRunning,
                                 onTapToSpeak = { screen = Screen.CHAT },
+                                modifier = Modifier.weight(1f),
+                            )
+                        Screen.SETTINGS ->
+                            SettingsScreen(
+                                voiceRunning = voiceRunning,
+                                onToggleVoice = {
+                                    voiceRunning = !voiceRunning
+                                    val intent = Intent(context, VoiceForegroundService::class.java)
+                                    if (voiceRunning) {
+                                        ContextCompat.startForegroundService(context, intent)
+                                    } else {
+                                        context.stopService(intent)
+                                    }
+                                },
+                                overlayRunning = overlayRunning,
+                                onToggleOverlay = {
+                                    overlayRunning = !overlayRunning
+                                    val intent = Intent(context, KillSwitchOverlayService::class.java)
+                                    if (overlayRunning) context.startService(intent) else context.stopService(intent)
+                                },
+                                onExploreDevice = {
+                                    DeviceExplorationScheduler.triggerNow(context)
+                                    Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
+                                },
                                 modifier = Modifier.weight(1f),
                             )
                         Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))
@@ -504,6 +396,7 @@ private fun AionApp(
                                         "Clipboard & Notes" to { screen = Screen.CLIPBOARD_NOTES },
                                         "AION Learning" to { screen = Screen.AI_LEARNING },
                                         "Voice Command History" to { screen = Screen.VOICE_COMMAND_HISTORY },
+                                        "Settings" to { screen = Screen.SETTINGS },
                                     ),
                                 modifier = Modifier.weight(1f),
                             )

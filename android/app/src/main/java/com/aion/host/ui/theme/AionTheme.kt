@@ -1,9 +1,17 @@
 package com.aion.host.ui.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.unit.sp
+import com.aion.host.R
 
 /**
  * T-168 (2026-07-21, owner-requested) — replaces EPIC 16's approximated palette with the exact
@@ -76,6 +84,155 @@ object AionColors {
     val AlertRed = Color(0xFFFF3B3B)
 }
 
+// ── Google Fonts provider ────────────────────────────────────────────────
+// Downloads Space Grotesk at runtime; the fallback is the default system sans-serif (no crash
+// if offline/Play Services unavailable). The provider cert fingerprint array is shipped inside
+// the google-fonts artifact itself (R.array.com_google_android_gms_fonts_certs).
+private val GoogleFontProvider =
+    GoogleFont.Provider(
+        providerAuthority = "com.google.android.gms.fonts",
+        providerPackage = "com.google.android.gms",
+        certificates = R.array.com_google_android_gms_fonts_certs,
+    )
+
+private val SpaceGroteskFont = GoogleFont("Space Grotesk")
+
+val SpaceGroteskFamily =
+    FontFamily(
+        Font(googleFont = SpaceGroteskFont, fontProvider = GoogleFontProvider, weight = FontWeight.Light),
+        Font(googleFont = SpaceGroteskFont, fontProvider = GoogleFontProvider, weight = FontWeight.Normal),
+        Font(googleFont = SpaceGroteskFont, fontProvider = GoogleFontProvider, weight = FontWeight.Medium),
+        Font(googleFont = SpaceGroteskFont, fontProvider = GoogleFontProvider, weight = FontWeight.SemiBold),
+        Font(googleFont = SpaceGroteskFont, fontProvider = GoogleFontProvider, weight = FontWeight.Bold),
+    )
+
+// ── Typography — exact Stitch "Aetheric Interface" specs ────────────────
+// display-lg:          48px / 700 / 1.1 / -0.02em
+// display-lg-mobile:   32px / 700 / 1.2 / -0.02em
+// headline-md:         24px / 500 / 1.4 /  0.01em
+// body-lg:             18px / 400 / 1.6 /  0em
+// body-sm:             14px / 400 / 1.5 /  0.02em
+// label-caps:          12px / 600 / 1.2 /  0.1em
+private val AionTypography =
+    Typography(
+        displayLarge =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 48.sp,
+                lineHeight = (48 * 1.1).sp,
+                letterSpacing = (-0.02).sp,
+            ),
+        displayMedium =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                lineHeight = (32 * 1.2).sp,
+                letterSpacing = (-0.02).sp,
+            ),
+        displaySmall =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 28.sp,
+                lineHeight = (28 * 1.2).sp,
+            ),
+        headlineLarge =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                lineHeight = (32 * 1.2).sp,
+                letterSpacing = (-0.02).sp,
+            ),
+        headlineMedium =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 24.sp,
+                lineHeight = (24 * 1.4).sp,
+                letterSpacing = 0.01.sp,
+            ),
+        headlineSmall =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 20.sp,
+                lineHeight = (20 * 1.4).sp,
+            ),
+        titleLarge =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 22.sp,
+                lineHeight = (22 * 1.3).sp,
+            ),
+        titleMedium =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 18.sp,
+                lineHeight = (18 * 1.4).sp,
+                letterSpacing = 0.01.sp,
+            ),
+        titleSmall =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                lineHeight = (14 * 1.4).sp,
+                letterSpacing = 0.01.sp,
+            ),
+        bodyLarge =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 18.sp,
+                lineHeight = (18 * 1.6).sp,
+            ),
+        bodyMedium =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                lineHeight = (14 * 1.5).sp,
+                letterSpacing = 0.02.sp,
+            ),
+        bodySmall =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 12.sp,
+                lineHeight = (12 * 1.5).sp,
+                letterSpacing = 0.02.sp,
+            ),
+        labelLarge =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                lineHeight = (14 * 1.2).sp,
+                letterSpacing = 0.04.sp,
+            ),
+        labelMedium =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                lineHeight = (12 * 1.2).sp,
+                letterSpacing = 0.1.sp,
+            ),
+        labelSmall =
+            TextStyle(
+                fontFamily = SpaceGroteskFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 10.sp,
+                lineHeight = (10 * 1.2).sp,
+                letterSpacing = 0.06.sp,
+            ),
+    )
+
 // The Material 3 "Fixed"/"FixedDim" color roles (primaryFixed, primaryFixedDim, etc.) that Stitch's
 // own token set includes aren't parameters on this project's resolved ColorScheme.darkColorScheme()
 // overload — kept as plain AionColors constants instead (AionColors.Glow is Stitch's own
@@ -122,5 +279,9 @@ private val AionDarkColorScheme =
 
 @Composable
 fun AionTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = AionDarkColorScheme, content = content)
+    MaterialTheme(
+        colorScheme = AionDarkColorScheme,
+        typography = AionTypography,
+        content = content,
+    )
 }

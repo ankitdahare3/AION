@@ -1,5 +1,11 @@
 package com.aion.host
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +18,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,29 +37,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.aion.host.security.AuditLogEntry
+import androidx.compose.ui.unit.sp
 import com.aion.host.security.AuditLogger
-import com.aion.host.security.ProviderKey
 import com.aion.host.security.SecretVault
-import com.aion.host.setup.SetupPermission
 import com.aion.host.ui.theme.AionColors
+import com.aion.host.ui.theme.AionTopBar
 import com.aion.host.ui.theme.GlassPanel
+import com.aion.host.ui.theme.glowShadow
 
-/**
- * EPIC 16 (2026-07-13, owner-requested) — a real dashboard, not the mockup's illustrative
- * "3 Meetings Today / HR Mail Received" cards (AION has no calendar/email integration to back
- * those with — showing them would be exactly the kind of thing this project's "AI never
- * pretends" rule forbids). Every number on this screen reads from a real source: [SetupPermission]
- * for onboarding completeness, [SecretVault] for configured provider keys, and [AuditLogger]'s
- * actual hash-chained log for recent activity. The "Tap to Speak" circle navigates to the real
- * [com.aion.host.brain.ChatScreen] — the actual place a goal can be given today — since
- * `VoiceSessionManager` (T-015) doesn't exist yet to make voice its own standalone entry point.
- */
 @Composable
 fun HomeScreen(
     auditLogger: AuditLogger,
@@ -57,94 +58,217 @@ fun HomeScreen(
     onTapToSpeak: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val entries by auditLogger.observeEntries().collectAsState(initial = emptyList())
-    val recent = entries.sortedByDescending { it.seq }.take(3)
-    val grantedPermissions = SetupPermission.entries.count { it.isGranted(context) }
-    val configuredKeys = ProviderKey.entries.count { secretVault.has(it) }
+    val latestActivity = entries.maxByOrNull { it.seq }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "pulseScale",
+    )
 
     Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(AionColors.Background),
     ) {
-        Text("AION", style = MaterialTheme.typography.headlineMedium, color = AionColors.Primary)
-        Text(
-            "Here's what's actually running right now.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = AionColors.OnSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
+        AionTopBar(
+            title = "AION",
+            trailingIcon = Icons.Filled.GridView,
+            onTrailingClick = { /* Apps hub handled by bottom nav in MainActivity */ },
         )
 
-        StatusCard("Setup", "$grantedPermissions/${SetupPermission.entries.size} permissions granted")
-        Spacer(Modifier.height(12.dp))
-        StatusCard("Providers", "$configuredKeys/${ProviderKey.entries.size} API keys configured")
-        Spacer(Modifier.height(12.dp))
-        StatusCard("Voice", if (voiceRunning) "Listening (mic active)" else "Idle (mic off)")
-
-        Spacer(Modifier.height(24.dp))
-        Text(
-            "Recent Activity",
-            style = MaterialTheme.typography.titleMedium,
-            color = AionColors.OnBackground,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        if (recent.isEmpty()) {
-            Text("Nothing yet — actions you approve will show up here.", color = AionColors.OnSurfaceVariant)
-        } else {
-            recent.forEach { entry -> ActivityRow(entry) }
-        }
-
-        Spacer(Modifier.height(32.dp))
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Central Voice Interaction Area
             Box(
                 modifier =
                     Modifier
-                        .size(100.dp)
-                        .shadow(
-                            elevation = 24.dp,
-                            shape = CircleShape,
-                            ambientColor = AionColors.Glow,
-                            spotColor = AionColors.Glow,
-                        ).clip(CircleShape)
-                        .background(Brush.radialGradient(listOf(AionColors.PrimaryContainer, AionColors.Surface)))
-                        .clickable(onClick = onTapToSpeak),
+                        .fillMaxWidth()
+                        .height(350.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Mic, contentDescription = "Tap to talk to AION", tint = AionColors.OnPrimary)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (voiceRunning) "LISTENING..." else "TAP TO SPEAK",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = AionColors.Glow,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(bottom = 32.dp),
+                    )
+
+                    // Orb
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(192.dp)
+                                .scale(if (voiceRunning) pulseScale else 1f)
+                                .shadow(
+                                    elevation = 32.dp,
+                                    shape = CircleShape,
+                                    ambientColor = AionColors.Glow,
+                                    spotColor = AionColors.Glow,
+                                ).clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(listOf(AionColors.PrimaryContainer, AionColors.Surface)),
+                                ).clickable(onClick = onTapToSpeak),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(AionColors.PrimaryContainer.copy(alpha = 0.2f)),
+                        )
+                    }
+
+                    Spacer(Modifier.height(32.dp))
+                    Text(
+                        text = if (voiceRunning) "You can speak now" else "AION is idle",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AionColors.OnSurface.copy(alpha = 0.8f),
+                    )
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            Text("Tap to talk to AION", color = AionColors.OnSurfaceVariant)
+
+            Spacer(Modifier.height(24.dp))
+
+            // Suggestions Cluster
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                QuickActionRow("Open Instagram and upload reel", Icons.Filled.PhotoCamera)
+                QuickActionRow("Call Rahul", Icons.Filled.Call)
+                QuickActionRow("Prepare my meeting report", Icons.Filled.Description)
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Active Context / Recent Activity
+            GlassPanel(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    if (latestActivity != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = latestActivity.action,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = AionColors.OnSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = relativeTime(latestActivity.ts),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AionColors.OnSurfaceVariant,
+                                )
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Icon(Icons.Filled.Download, contentDescription = null, tint = AionColors.Glow)
+                        }
+                    } else {
+                        Text(
+                            "Nothing yet — actions you approve will show up here.",
+                            color = AionColors.OnSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Mode Indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ModeDot("Tap", active = !voiceRunning)
+                Spacer(Modifier.width(24.dp))
+                ModeDot("Speak", active = voiceRunning)
+                Spacer(Modifier.width(24.dp))
+                ModeDot("Done", active = false)
+            }
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-private fun StatusCard(
+private fun QuickActionRow(
     label: String,
-    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
 ) {
-    GlassPanel(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = AionColors.OnSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyLarge, color = AionColors.OnBackground)
+    GlassPanel(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { /* T-051: Send goal to executor */ },
+        cornerRadius = 12.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = AionColors.Glow,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AionColors.OnSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
 
 @Composable
-private fun ActivityRow(entry: AuditLogEntry) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(entry.action, color = AionColors.OnBackground, style = MaterialTheme.typography.bodyMedium)
+private fun ModeDot(
+    label: String,
+    active: Boolean,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
+        Box(
+            modifier =
+                Modifier
+                    .size(if (active) 8.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(if (active) AionColors.PrimaryContainer else AionColors.OnSurfaceVariant)
+                    .then(if (active) Modifier.glowShadow(CircleShape) else Modifier),
+        )
+        Spacer(Modifier.height(8.dp))
         Text(
-            relativeTime(entry.ts),
-            color = AionColors.OnSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.End,
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (active) AionColors.Glow else AionColors.OnSurfaceVariant,
         )
     }
 }
