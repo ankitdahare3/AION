@@ -144,6 +144,53 @@ class AionGraphFactoryTest {
         }
 
     @Test
+    fun `2026 backend upgrade - a full successful run actually reaches memory_writer and writes a real Memory`() =
+        runTest {
+            // Regression test for a real bug: ResponderAgent used to set done=true itself, which —
+            // combined with AionGraph.run()'s frozen `while (... && !s.done)` loop — meant the
+            // "responder" -> "memory_writer" hop from route() was computed but never taken. Every
+            // completed goal, ever, silently skipped memory_writer. This proves it's reached now.
+            val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+            val approvalGate = com.aion.brain.ApprovalGate { it }
+
+            val planJson = """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]"""
+            val router = ProviderRouter(listOf(scriptedProvider(planJson)), noopScoreStore, alwaysCanSpend)
+            val executor = ActionExecutor { ExecutionOutcome(success = true, observation = "ok") }
+
+            val recordingMemoryStore =
+                object : MemoryStore {
+                    val inserted = mutableListOf<Memory>()
+
+                    override suspend fun insert(memory: Memory): Long {
+                        inserted += memory
+                        return inserted.size.toLong()
+                    }
+
+                    override suspend fun getAllActive(): List<Memory> = inserted
+
+                    override suspend fun update(memory: Memory) {}
+
+                    override suspend fun softDelete(id: Long) {}
+                }
+
+            val factory = AionGraphFactory(checkpointer, recordingMemoryStore, noScreenSnapshot, FewShotBank())
+            val graph = factory.create(router, pluginManagerWith(executor), approvalGate)
+
+            val result = graph.run(com.aion.brain.AgentState(goal = "wifi on karo"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(result.done)
+            assertEquals(1, recordingMemoryStore.inserted.size)
+            assertTrue(
+                recordingMemoryStore.inserted
+                    .single()
+                    .text
+                    .contains("wifi on karo"),
+            )
+        }
+
+    @Test
     fun `a denied side-effect step aborts the run without executing it`() =
         runTest {
             val checkpointer = RoomCheckpointer(FakeGraphCheckpointDao())

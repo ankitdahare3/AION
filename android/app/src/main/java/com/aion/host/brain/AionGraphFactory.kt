@@ -48,6 +48,13 @@ import javax.inject.Singleton
  * real caller ever constructed a [FewShotBank] or passed one in here — so every live replan was
  * blind to the attempt that just failed, a real, plausible driver of goals that loop instead of
  * converging or failing fast.
+ *
+ * 2026 backend upgrade (found while wiring real episodic memory) — `memory_writer` now gets the
+ * real [memoryStore] instead of a null default. It was ALREADY wired into the graph correctly, but
+ * `ResponderAgent` used to set `done=true` itself, which — combined with `AionGraph.run()`'s frozen
+ * `while (... && !s.done)` loop — meant the graph always ended one node too early and
+ * `MemoryWriterAgent` never actually ran, for any goal, ever. Fixed on the `ResponderAgent`/
+ * `MemoryWriterAgent` side (see their own doc comments) rather than touching the frozen graph.
  */
 @Singleton
 class AionGraphFactory
@@ -80,7 +87,7 @@ class AionGraphFactory
                         "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(fewShotBank),
                         "responder" to ResponderAgent(),
-                        "memory_writer" to MemoryWriterAgent(),
+                        "memory_writer" to MemoryWriterAgent(memoryStore),
                     ),
                 route = { node, s ->
                     when (node) {
