@@ -34,6 +34,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Sensors
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +53,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -60,14 +63,22 @@ import androidx.compose.ui.unit.dp
 import com.aion.brain.AgentState
 import com.aion.brain.ApprovalGate
 import com.aion.brain.PluginManager
+import com.aion.brain.ProgressPhrasing
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ResponsePhrasing
 import com.aion.host.security.KillSwitch
 import com.aion.host.ui.theme.AionColors
 import com.aion.host.ui.theme.AionTopBar
 import com.aion.host.ui.theme.GlassPanel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+
+// No wall-clock ceiling existed for a run before this — only AionGraph's own 30-step counter,
+// which a slow-LLM-latency run could still take many real minutes to hit.
+private const val GRAPH_TIMEOUT_MS = 5 * 60 * 1000L
 
 @Composable
 fun ChatScreen(
@@ -76,6 +87,7 @@ fun ChatScreen(
     pluginManager: PluginManager,
     approvalGate: ApprovalGate,
     killSwitch: KillSwitch,
+    checkpointer: RoomCheckpointer,
     modifier: Modifier = Modifier,
 ) {
     var goal by rememberSaveable { mutableStateOf("") }
@@ -83,6 +95,8 @@ fun ChatScreen(
     var response by rememberSaveable { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
     var muted by rememberSaveable { mutableStateOf(false) }
+    var runJob by remember { mutableStateOf<Job?>(null) }
+    val liveState by checkpointer.liveState.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -121,18 +135,29 @@ fun ChatScreen(
             goal = ""
             running = true
             response = null
-            scope.launch {
-                try {
-                    killSwitch.reset()
-                    val graph = graphFactory.create(router, pluginManager, approvalGate)
-                    val result = graph.run(AgentState(goal = submittedGoal))
-                    response = result.response
-                } catch (e: Exception) {
-                    response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
-                } finally {
-                    running = false
+            checkpointer.resetLiveState()
+            runJob =
+                scope.launch {
+                    try {
+                        killSwitch.reset()
+                        val graph = graphFactory.create(router, pluginManager, approvalGate)
+                        val result =
+                            withTimeoutOrNull(GRAPH_TIMEOUT_MS) { graph.run(AgentState(goal = submittedGoal)) }
+                        response = result?.response ?: "That's taking too long, so I stopped — want to try again?"
+                    } catch (e: CancellationException) {
+                        // A user-initiated cancel (the Cancel button), not the timeout above —
+                        // withTimeoutOrNull already swallows its OWN internal cancellation and
+                        // returns null instead of throwing, so reaching this catch means someone
+                        // outside cancelled runJob directly. Rethrowing is required: swallowing a
+                        // CancellationException silently breaks structured-concurrency cleanup.
+                        response = "Cancelled."
+                        throw e
+                    } catch (e: Exception) {
+                        response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
+                    } finally {
+                        running = false
+                    }
                 }
-            }
         }
     }
 
@@ -170,7 +195,12 @@ fun ChatScreen(
                     UserBubble(text = submittedGoal)
                 }
                 if (running) {
-                    AIBubble(text = "Thinking...")
+                    val hinglish = ResponsePhrasing.isHinglish(submittedGoal)
+                    val progressText = liveState?.let { ProgressPhrasing.describe(it, hinglish) } ?: "Thinking..."
+                    AIBubble(text = progressText)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                        CancelRunChip(onClick = { runJob?.cancel() })
+                    }
                 } else if (response != null) {
                     // Split response into simple actions vs text (mock parsing for visuals)
                     // We'll just display it as an AI Bubble for now.
@@ -311,6 +341,29 @@ private fun AIBubble(text: String) {
         ) {
             Text(text = text, color = AionColors.OnSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
         }
+    }
+}
+
+/** Wired to `runJob?.cancel()` — the only way to stop a run before this was force-quitting the app. */
+@Composable
+private fun CancelRunChip(onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(AionColors.SurfaceVariant.copy(alpha = 0.6f))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.Close,
+            contentDescription = null,
+            tint = AionColors.OnSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("Cancel", color = AionColors.OnSurfaceVariant, style = MaterialTheme.typography.labelMedium)
     }
 }
 

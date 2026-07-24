@@ -407,6 +407,7 @@ private fun AionApp(
                                 pluginRegistry.manager,
                                 realApprovalGate,
                                 killSwitch,
+                                checkpointer,
                                 modifier = Modifier.weight(1f),
                             )
                     }

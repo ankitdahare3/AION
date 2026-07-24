@@ -52,4 +52,35 @@ class RoomCheckpointerTest {
             assertEquals(2, dao.getForGoal("g").size)
             assertEquals(1, dao.getForGoal("other").size)
         }
+
+    @Test
+    fun `liveState reflects the most recent save synchronously, before the async Room write`() =
+        runTest {
+            val dao = FakeGraphCheckpointDao()
+            val checkpointer = RoomCheckpointer(dao)
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+            assertEquals(null, checkpointer.liveState.value)
+
+            val state = AgentState(goal = "g", currentStep = 1, stepCount = 2)
+            checkpointer.save(state)
+
+            // No advanceUntilIdle() here — liveState must already reflect the save before the
+            // fire-and-forget Room insert even runs, since ChatScreen needs it to update the UI
+            // the instant a step happens, not whenever the background write eventually completes.
+            assertEquals(state, checkpointer.liveState.value)
+        }
+
+    @Test
+    fun `resetLiveState clears stale progress from a previous goal`() =
+        runTest {
+            val dao = FakeGraphCheckpointDao()
+            val checkpointer = RoomCheckpointer(dao)
+            checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+            checkpointer.save(AgentState(goal = "first goal", currentStep = 3))
+            checkpointer.resetLiveState()
+
+            assertEquals(null, checkpointer.liveState.value)
+        }
 }
