@@ -383,3 +383,43 @@
   does (e.g. a future "summarize what happened" step, or `ContextBuilder`'s still-unbuilt tool-result
   section per its own BACKLOG.md entry above) — whoever builds that should route `toolResults`
   through `InjectionFilter.wrap` first, or wrap at the plugin boundary directly.
+
+- **MCP (Model Context Protocol) — evaluated, decided NOT to build now (2026 backend upgrade,
+  item 4/4).** Compared directly against `PluginManager`/`AionPlugin` (the existing tool system)
+  before writing any code, per the owner's own instruction not to assume MCP is additive.
+  Conclusion: it isn't, for this app, right now.
+  - **Android's process model is the real blocker, not a preference.** Most of the popular MCP
+    servers (filesystem, git, sqlite, etc.) are local processes spawned over stdio — that's a
+    desktop-host assumption. An Android app can't spawn arbitrary local subprocesses the way a
+    desktop MCP host does; only remote/HTTP+SSE MCP servers would ever be reachable from AION,
+    which is a much smaller slice of the real MCP ecosystem than "add MCP support" implies.
+  - **AION's actual highest-value capability — real device automation via `AionAccessibilityService`
+    (tap/launchApp/read-screen with real Android permissions) — has no MCP-server equivalent and
+    never will; no external protocol server can tap a button on this specific phone.** MCP would be
+    additive only for cloud-API-shaped tools, which is the one category `GmailPlugin`/`TelegramPlugin`
+    already prove works fine as plain `AionPlugin` implementations — direct REST calls, no protocol
+    layer, already shipped and working.
+  - **The one real, narrow case MCP would help:** the owner already has a specific remote MCP server
+    configured elsewhere (e.g. a personal Notion/GitHub MCP endpoint) and wants AION to reuse that
+    exact config instead of a bespoke plugin. That's a genuine but opt-in, not-yet-requested need —
+    if it comes up concretely, a single `McpPlugin(serverUrl)` translating that one server's
+    `tools/list`/`tools/call` into `ToolSchema`/`ToolResult` is a small, targeted addition, not a
+    reason to build general MCP client infrastructure speculatively today.
+  - Not implemented. Revisit only if a specific real remote MCP server becomes a concrete need.
+
+- **Agent Runtime / multi-agent extension points — evaluated, not built, per the owner's own
+  "prepare extension points, don't implement" instruction (2026 backend upgrade).** The
+  Planner→Executor→Reflector pipeline could in principle evolve toward independently-running
+  planner/researcher/executor/verifier agents, but `AionGraph.kt` is frozen (ADR required for any
+  signature/behavior change) and today's single-pipeline design has no concrete goal it currently
+  fails at that multi-agent would fix — the `Agents Dashboard`/`Multi-Agent Workspace` mockup
+  screens (T-168) are explicitly illustrative for exactly this reason: no real backend exists or is
+  scoped yet. Don't build toward this without a specific goal AionGraph's current shape can't serve.
+  What WAS built toward "agent runtime" concerns, without touching AionGraph's public API:
+  streaming progress (`RoomCheckpointer.liveState`), cancellation + a 5-minute wall-clock timeout
+  (`ChatScreen`'s `runJob`/`withTimeoutOrNull`) — see the "stream real execution progress" commit.
+  Structured telemetry for provider calls and plugin executions specifically (not blanket
+  "add telemetry everywhere" — `AuditLogger`/`RoomCheckpointer` already cover approvals/kill-switch/
+  per-step state) is the one concrete telemetry gap still open: `ProviderRouter.route()` and
+  `PluginManager.route()` calls aren't currently written to `AuditLogger`, unlike `ActionDispatcher`'s
+  calls which already are.
