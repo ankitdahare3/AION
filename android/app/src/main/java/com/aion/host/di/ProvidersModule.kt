@@ -10,6 +10,7 @@ import com.aion.brain.ProviderRouter
 import com.aion.brain.ProvidersConfigLoader
 import com.aion.brain.ScoreStore
 import com.aion.brain.Tier
+import com.aion.brain.providers.AnthropicProvider
 import com.aion.brain.providers.GeminiProvider
 import com.aion.brain.providers.OpenAiCompatProvider
 import com.aion.host.security.ProviderKey
@@ -29,10 +30,11 @@ import javax.inject.Singleton
  * existed and was unit-tested but had zero production callers.
  *
  * A provider only appears in the registry if BOTH its `kind` maps to a real adapter today
- * (`openai_compat` -> [OpenAiCompatProvider], `google` -> [GeminiProvider]; anything else is
- * skipped, not guessed at) AND its key is actually set in [SecretVault] — either just means fewer
- * candidates, not a crash; [ProviderRouter.route] already handles an empty or short candidate list
- * gracefully (a caller with zero configured providers gets a clear "No provider available" failure).
+ * (`openai_compat` -> [OpenAiCompatProvider], `google` -> [GeminiProvider], `anthropic` ->
+ * [AnthropicProvider]; anything else is skipped, not guessed at) AND its key is actually set in
+ * [SecretVault] — either just means fewer candidates, not a crash; [ProviderRouter.route] already
+ * handles an empty or short candidate list gracefully (a caller with zero configured providers
+ * gets a clear "No provider available" failure).
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,6 +50,7 @@ object ProvidersModule {
             "gemini" -> ProviderKey.GEMINI
             "openai" -> ProviderKey.OPENAI
             "deepseek" -> ProviderKey.DEEPSEEK
+            "anthropic" -> ProviderKey.ANTHROPIC
             else -> null
         }
 
@@ -87,6 +90,17 @@ object ProvidersModule {
                 )
             "google" ->
                 GeminiProvider(
+                    id = config.id,
+                    tier = tier,
+                    caps = caps,
+                    endpoint = endpoint,
+                    model = model,
+                    apiKey = apiKey,
+                    costInPerMTok = config.cost.costInPerMTok,
+                    costOutPerMTok = config.cost.costOutPerMTok,
+                )
+            "anthropic" ->
+                AnthropicProvider(
                     id = config.id,
                     tier = tier,
                     caps = caps,

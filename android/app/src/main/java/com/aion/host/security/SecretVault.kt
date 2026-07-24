@@ -24,6 +24,10 @@ enum class ProviderKey(
     OPENAI("OpenAI API Key", "openai_api_key"),
     DEEPSEEK("DeepSeek API Key", "deepseek_api_key"),
 
+    // Backend upgrade (2026) — AnthropicProvider now exists; this is the last of the launch-set
+    // providers.yaml adapters that was still missing.
+    ANTHROPIC("Anthropic API Key", "anthropic_api_key"),
+
     // T-102 — GmailPlugin expects a bare OAuth2 access token (no client id/secret flow built here,
     // BACKLOG.md); TelegramPlugin expects a bot token from @BotFather, a single static secret.
     GMAIL_ACCESS_TOKEN("Gmail Access Token", "gmail_access_token"),

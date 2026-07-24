@@ -4,6 +4,7 @@ import com.aion.brain.ProviderCapsConfig
 import com.aion.brain.ProviderConfig
 import com.aion.brain.ProviderCostConfig
 import com.aion.brain.Tier
+import com.aion.brain.providers.AnthropicProvider
 import com.aion.brain.providers.GeminiProvider
 import com.aion.brain.providers.OpenAiCompatProvider
 import com.aion.host.security.ProviderKey
@@ -21,6 +22,7 @@ class ProvidersModuleTest {
         assertEquals(ProviderKey.GEMINI, ProvidersModule.keyFor("gemini"))
         assertEquals(ProviderKey.OPENAI, ProvidersModule.keyFor("openai"))
         assertEquals(ProviderKey.DEEPSEEK, ProvidersModule.keyFor("deepseek"))
+        assertEquals(ProviderKey.ANTHROPIC, ProvidersModule.keyFor("anthropic"))
     }
 
     @Test
@@ -71,6 +73,25 @@ class ProvidersModuleTest {
 
         assertEquals(GeminiProvider::class, provider!!::class)
         assertEquals("gemini", provider.id)
+        assertEquals(Tier.PAID, provider.tier)
+    }
+
+    @Test
+    fun `an anthropic config builds a real AnthropicProvider`() {
+        val config =
+            ProviderConfig(
+                id = "anthropic",
+                kind = "anthropic",
+                endpoint = "https://api.anthropic.com/v1",
+                models = listOf("claude-haiku-4-5-20251001"),
+                tier = "paid",
+                privacy = "cloud",
+            )
+
+        val provider = ProvidersModule.buildProvider(config, apiKey = "key123")
+
+        assertEquals(AnthropicProvider::class, provider!!::class)
+        assertEquals("anthropic", provider.id)
         assertEquals(Tier.PAID, provider.tier)
     }
 

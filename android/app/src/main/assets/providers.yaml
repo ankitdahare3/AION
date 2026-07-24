@@ -2,13 +2,13 @@
 # builds one real Provider per entry that has BOTH a real adapter for its `kind` and a configured
 # key in SecretVault — this file alone now genuinely drives the registry (NFR-10), not just docs.
 #
-# Only `kind: openai_compat` and `kind: google` have a real adapter today (OpenAiCompatProvider,
-# GeminiProvider) — an entry with any other `kind` would be honest about being unbuilt, not
-# silently wrong, but there are none right now: `local`/`anthropic`/on-device-LAN entries were
-# removed here rather than left unbuilt-but-listed, since that mismatch (file claims a provider is
-# configured; nothing in code can actually build one) is exactly the bug this file used to have.
-# Adding real support for any of those back means writing the adapter class first (see
-# BACKLOG.md), then re-adding the entry — not the other way around.
+# `kind: openai_compat`, `kind: google`, and `kind: anthropic` have real adapters
+# (OpenAiCompatProvider, GeminiProvider, AnthropicProvider) — an entry with any other `kind` would
+# be honest about being unbuilt, not silently wrong, but there are none right now: `local`/
+# on-device-LAN entries were removed here rather than left unbuilt-but-listed, since that mismatch
+# (file claims a provider is configured; nothing in code can actually build one) is exactly the bug
+# this file used to have. Adding real support for either back means writing the adapter class
+# first (see BACKLOG.md), then re-adding the entry — not the other way around.
 providers:
   - id: groq
     kind: openai_compat
@@ -89,5 +89,20 @@ providers:
     cost:
       in: 0.28
       out: 0.42
+    tier: paid
+    privacy: cloud
+
+  - id: anthropic
+    kind: anthropic
+    endpoint: https://api.anthropic.com/v1
+    models: [claude-haiku-4-5-20251001]
+    caps:
+      vision: true
+      tools: true
+      context: 200000
+      stream: true
+    cost:
+      in: 1.00
+      out: 5.00
     tier: paid
     privacy: cloud
