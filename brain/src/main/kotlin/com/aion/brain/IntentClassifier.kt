@@ -11,8 +11,14 @@ enum class Intent { CHAT, SIMPLE_ACTION, MULTI_STEP, INFO_QUERY, SYSTEM }
  */
 object IntentClassifier {
     // Idiomatic Hindi greetings that grammatically look like a question ("how are you") but are
-    // CHAT, not INFO_QUERY — checked before every other rule.
-    private val greetingOverrides = listOf("kaise ho", "kaisi ho", "kaise hain")
+    // CHAT, not INFO_QUERY — checked before every other rule. Real user-reported bug: "kaisa hai"/
+    // "kaisa ho" (the masculine-singular conjugation of this exact same idiom — arguably the MOST
+    // common form in casual Hinglish, e.g. asking AION itself "kaisa hai") was missing entirely, so
+    // it fell through to INFO_QUERY (matches "kaisa" in infoWords + "?"/question shape) and got
+    // routed by IntentRoutingAgent to the real device-automation PlannerAgent instead of ChatAgent
+    // — which then tried to plan a device action to "answer" small talk, surfacing an approval
+    // prompt (e.g. "open ...") instead of a normal reply.
+    private val greetingOverrides = listOf("kaise ho", "kaisi ho", "kaise hain", "kaisa hai", "kaisa ho")
 
     private val systemTriggerWords = listOf("aion", "audit log", "kill switch", "wake word", "api key")
     private val systemControlWords =

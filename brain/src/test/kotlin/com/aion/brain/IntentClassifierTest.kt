@@ -143,6 +143,28 @@ class IntentClassifierTest {
         }
     }
 
+    // Real user-reported bug: asking AION "Kaisa hai?" got routed to the real automation planner
+    // (an "open ..." approval prompt) instead of a normal chat reply — "kaisa hai"/"kaisa ho" were
+    // missing from greetingOverrides, so they fell through to INFO_QUERY like a real question would.
+    @Test
+    fun `casual how-are-you phrasing classifies as CHAT, not INFO_QUERY`() {
+        val shouldBeChat =
+            listOf(
+                "kaisa hai",
+                "Kaisa hai?",
+                "AION kaisa hai",
+                "tu kaisa hai",
+                "kaisa ho",
+                "tum kaisa ho",
+            )
+        for (utterance in shouldBeChat) {
+            assertTrue(
+                "\"$utterance\" should classify as CHAT (was routing to the automation planner instead)",
+                IntentClassifier.classify(utterance) == Intent.CHAT,
+            )
+        }
+    }
+
     @Test
     fun `at least 90 percent of the 100-utterance labeled set classifies correctly`() {
         assertTrue("expected exactly 100 labeled utterances, found ${labeled.size}", labeled.size == 100)
