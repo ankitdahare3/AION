@@ -24,6 +24,22 @@
   class of bug will keep recurring with new phrasings no matter how many individual words get
   patched, which is exactly the argument for the real fix named above, not another word-list PR.
 
+  **Update 2026-07-25 (T-171) — built, via LiteRT-LM instead of T-032's originally-scoped llama.cpp
+  JNI.** T-032 itself is still `[ ]` deferred as its own `:inference`-module/model-manifest-UI scope
+  — this is narrower: `LlmIntentClassifier` (`:brain`, interface + pure prompt/parse logic) and
+  `LiteRtIntentClassifier` (`:android:app`, real Google AI Edge LiteRT-LM wrapper) plug into
+  `IntentRoutingAgent` ahead of the keyword classifier, falling back to it whenever the model is
+  missing/unloadable/unparseable — never a hard dependency. Two real, load-bearing caveats found
+  and accepted (owner's explicit call, see PROGRESS.md): (1) LiteRT-LM's own docs say it's
+  "optimized for high-end devices... does not reliably support emulators" — the same class of wall
+  T-032 was deferred for in the first place, so this may do nothing at all on the `emulator-5554`
+  AVD this whole project has tested against, only on a real device. (2) The Gemma3-1B-IT `.litertlm`
+  model is gated behind HuggingFace's Gemma license — no automated download; the owner has to accept
+  the license once on their own account and push the file to the device manually (documented in
+  `LiteRtIntentClassifier`'s own KDoc). Real classification accuracy is NOT live-verified this
+  session (no model file, no device attached) — build/test-verified only, same honesty standard as
+  every other "verified live" precedent in this codebase for what hasn't actually been run live yet.
+
 - **Expand `ContextBuilder` (T-034) to the full DOC-004 §4 spec**: user-profile summary (≤300 tok),
   vector-recalled memories (top-k=5), compressed a11y tree (≤2000 tok), and tool schemas. v1 only
   covers the persona+safety immutable prefix + last N=6 turns, because Memory (T-06x), the a11y
