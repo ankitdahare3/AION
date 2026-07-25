@@ -35,6 +35,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Sensors
@@ -66,6 +67,7 @@ import com.aion.brain.PluginManager
 import com.aion.brain.ProgressPhrasing
 import com.aion.brain.ProviderRouter
 import com.aion.brain.ResponsePhrasing
+import com.aion.host.memory.TurnEntity
 import com.aion.host.security.KillSwitch
 import com.aion.host.ui.theme.AionColors
 import com.aion.host.ui.theme.AionTopBar
@@ -88,11 +90,19 @@ fun ChatScreen(
     approvalGate: ApprovalGate,
     killSwitch: KillSwitch,
     checkpointer: RoomCheckpointer,
+    chatHistoryStore: ChatHistoryStore,
+    conversationId: Long?,
+    onConversationIdChange: (Long?) -> Unit,
+    onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var goal by rememberSaveable { mutableStateOf("") }
-    var submittedGoal by rememberSaveable { mutableStateOf("") }
+    var turns by remember { mutableStateOf<List<TurnEntity>>(emptyList()) }
+    var runningGoalText by remember { mutableStateOf("") }
     var response by rememberSaveable { mutableStateOf<String?>(null) }
+    // Only for a cancelled/timed-out/errored run — those aren't written to chat history (nothing
+    // to resume), so they render here as a one-off bubble instead of via the persisted [turns] list.
+    var transientNotice by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
     var muted by rememberSaveable { mutableStateOf(false) }
     var runJob by remember { mutableStateOf<Job?>(null) }
@@ -100,6 +110,12 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    // T-060's conversations/turns tables finally get a real reader: switching conversationId
+    // (opened from history, or reset to null by "New Chat") reloads the transcript from Room.
+    LaunchedEffect(conversationId) {
+        turns = conversationId?.let { chatHistoryStore.turnsFor(it) } ?: emptyList()
+    }
 
     val speechLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -120,30 +136,59 @@ fun ChatScreen(
         val text = response
         val engine = tts
         if (!muted && text != null && engine != null) {
-            engine.language = if (ResponsePhrasing.isHinglish(submittedGoal)) Locale("hi", "IN") else Locale.US
+            engine.language = if (ResponsePhrasing.isHinglish(runningGoalText)) Locale("hi", "IN") else Locale.US
             engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
         }
     }
 
-    LaunchedEffect(response, submittedGoal, running) {
+    LaunchedEffect(turns, running) {
         scrollState.animateScrollTo(scrollState.maxValue)
     }
 
     val submitGoal = {
         if (goal.isNotBlank() && !running) {
-            submittedGoal = goal
+            val userText = goal
             goal = ""
+            runningGoalText = userText
             running = true
             response = null
+            transientNotice = null
             checkpointer.resetLiveState()
             runJob =
                 scope.launch {
                     try {
                         killSwitch.reset()
+                        val lang = if (ResponsePhrasing.isHinglish(userText)) "hi" else "en"
+                        var convId = conversationId
+                        if (convId == null) {
+                            convId = chatHistoryStore.startConversation(userText, System.currentTimeMillis())
+                            onConversationIdChange(convId)
+                        }
+                        chatHistoryStore.appendTurn(convId, "user", userText, lang, System.currentTimeMillis())
+                        turns =
+                            turns +
+                            TurnEntity(
+                                convId = convId,
+                                role = "user",
+                                text = userText,
+                                lang = lang,
+                                ts = System.currentTimeMillis(),
+                            )
+
                         val graph = graphFactory.create(router, pluginManager, approvalGate)
-                        val result =
-                            withTimeoutOrNull(GRAPH_TIMEOUT_MS) { graph.run(AgentState(goal = submittedGoal)) }
-                        response = result?.response ?: "That's taking too long, so I stopped — want to try again?"
+                        val result = withTimeoutOrNull(GRAPH_TIMEOUT_MS) { graph.run(AgentState(goal = userText)) }
+                        val reply = result?.response ?: "That's taking too long, so I stopped — want to try again?"
+                        response = reply
+                        chatHistoryStore.appendTurn(convId, "assistant", reply, lang, System.currentTimeMillis())
+                        turns =
+                            turns +
+                            TurnEntity(
+                                convId = convId,
+                                role = "assistant",
+                                text = reply,
+                                lang = lang,
+                                ts = System.currentTimeMillis(),
+                            )
                     } catch (e: CancellationException) {
                         // A user-initiated cancel (the Cancel button), not the timeout above —
                         // withTimeoutOrNull already swallows its OWN internal cancellation and
@@ -151,9 +196,12 @@ fun ChatScreen(
                         // outside cancelled runJob directly. Rethrowing is required: swallowing a
                         // CancellationException silently breaks structured-concurrency cleanup.
                         response = "Cancelled."
+                        transientNotice = "Cancelled."
                         throw e
                     } catch (e: Exception) {
-                        response = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
+                        val message = "AION couldn't complete that: ${e.message ?: e.javaClass.simpleName}"
+                        response = message
+                        transientNotice = message
                     } finally {
                         running = false
                     }
@@ -180,6 +228,29 @@ fun ChatScreen(
                 title = "Talk to AION",
                 trailingIcon = Icons.Filled.Sensors,
                 onTrailingClick = { muted = !muted },
+                trailingContent = {
+                    Spacer(Modifier.width(16.dp))
+                    Icon(
+                        Icons.Filled.History,
+                        contentDescription = "Chat history",
+                        tint = AionColors.OnSurfaceVariant,
+                        modifier = Modifier.clickable(onClick = onOpenHistory),
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "New chat",
+                        tint = AionColors.OnSurfaceVariant,
+                        modifier =
+                            Modifier.clickable {
+                                if (!running) {
+                                    transientNotice = null
+                                    response = null
+                                    onConversationIdChange(null)
+                                }
+                            },
+                    )
+                },
             )
 
             // Chat Area
@@ -191,20 +262,18 @@ fun ChatScreen(
                         .padding(horizontal = 24.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                if (submittedGoal.isNotBlank()) {
-                    UserBubble(text = submittedGoal)
+                turns.forEach { turn ->
+                    if (turn.role == "user") UserBubble(text = turn.text) else AIBubble(text = turn.text)
                 }
                 if (running) {
-                    val hinglish = ResponsePhrasing.isHinglish(submittedGoal)
+                    val hinglish = ResponsePhrasing.isHinglish(runningGoalText)
                     val progressText = liveState?.let { ProgressPhrasing.describe(it, hinglish) } ?: "Thinking..."
                     AIBubble(text = progressText)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                         CancelRunChip(onClick = { runJob?.cancel() })
                     }
-                } else if (response != null) {
-                    // Split response into simple actions vs text (mock parsing for visuals)
-                    // We'll just display it as an AI Bubble for now.
-                    AIBubble(text = response!!)
+                } else if (transientNotice != null) {
+                    AIBubble(text = transientNotice!!)
                 }
 
                 Spacer(Modifier.height(32.dp))

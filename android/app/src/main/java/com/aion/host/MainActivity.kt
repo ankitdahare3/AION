@@ -47,6 +47,8 @@ import com.aion.host.about.AboutScreen
 import com.aion.host.about.OfflineStatusScreen
 import com.aion.host.brain.AionGraphFactory
 import com.aion.host.brain.BuiltInPluginRegistry
+import com.aion.host.brain.ChatHistoryScreen
+import com.aion.host.brain.ChatHistoryStore
 import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
 import com.aion.host.brain.RealApprovalGate
@@ -104,6 +106,7 @@ private enum class Screen {
     AUDIT_LOG,
     API_KEYS,
     CHAT,
+    CHAT_HISTORY,
     CALENDAR,
     COMMUNICATIONS,
     DEVICE_STATUS,
@@ -177,6 +180,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var checkpointer: RoomCheckpointer
 
+    @Inject
+    lateinit var chatHistoryStore: ChatHistoryStore
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -206,6 +212,7 @@ class MainActivity : FragmentActivity() {
                     killSwitch,
                     memoryStore,
                     checkpointer,
+                    chatHistoryStore,
                 )
             } else {
                 LockScreen(onUnlockTap = {
@@ -257,6 +264,7 @@ private fun AionApp(
     killSwitch: KillSwitch,
     memoryStore: MemoryStore,
     checkpointer: RoomCheckpointer,
+    chatHistoryStore: ChatHistoryStore,
 ) {
     // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
@@ -265,6 +273,9 @@ private fun AionApp(
     var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
     var overlayRunning by rememberSaveable { mutableStateOf(false) }
     var voiceRunning by rememberSaveable { mutableStateOf(false) }
+    // Which conversation ChatScreen is showing — null means an unsaved "New Chat" that gets a
+    // real conversation row the moment its first message is sent (see ChatHistoryStore).
+    var activeConversationId by rememberSaveable { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
 
     // Antigravity-audit finding, 2026-07-13: with no back-stack at all, the system Back button
@@ -396,6 +407,7 @@ private fun AionApp(
                                         "Clipboard & Notes" to { screen = Screen.CLIPBOARD_NOTES },
                                         "AION Learning" to { screen = Screen.AI_LEARNING },
                                         "Voice Command History" to { screen = Screen.VOICE_COMMAND_HISTORY },
+                                        "Chat History" to { screen = Screen.CHAT_HISTORY },
                                         "Settings" to { screen = Screen.SETTINGS },
                                     ),
                                 modifier = Modifier.weight(1f),
@@ -408,6 +420,21 @@ private fun AionApp(
                                 realApprovalGate,
                                 killSwitch,
                                 checkpointer,
+                                chatHistoryStore,
+                                conversationId = activeConversationId,
+                                onConversationIdChange = { activeConversationId = it },
+                                onOpenHistory = { screen = Screen.CHAT_HISTORY },
+                                modifier = Modifier.weight(1f),
+                            )
+                        Screen.CHAT_HISTORY ->
+                            ChatHistoryScreen(
+                                chatHistoryStore,
+                                resumeSignal,
+                                onBack = { screen = Screen.CHAT },
+                                onOpenConversation = { id ->
+                                    activeConversationId = id
+                                    screen = Screen.CHAT
+                                },
                                 modifier = Modifier.weight(1f),
                             )
                     }

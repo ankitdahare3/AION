@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -251,6 +252,10 @@ fun AionTopBar(
     onBack: (() -> Unit)? = null,
     trailingIcon: ImageVector? = null,
     onTrailingClick: (() -> Unit)? = null,
+    // Additive slot for screens needing more than the one trailingIcon (e.g. ChatScreen's
+    // New Chat + History icons alongside its existing mute toggle) — every other caller leaves
+    // this null and is unaffected.
+    trailingContent: (@Composable RowScope.() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -280,6 +285,7 @@ fun AionTopBar(
                 modifier = Modifier.clickable(onClick = onTrailingClick ?: {}),
             )
         }
+        trailingContent?.invoke(this)
     }
 }
 
