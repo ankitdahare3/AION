@@ -2,9 +2,11 @@ package com.aion.host.di
 
 import com.aion.brain.BudgetGuard
 import com.aion.brain.FewShotBank
+import com.aion.brain.LlmIntentClassifier
 import com.aion.brain.MemoryStore
 import com.aion.brain.ScoreStore
 import com.aion.brain.ScreenSnapshotProvider
+import com.aion.host.brain.LiteRtIntentClassifier
 import com.aion.host.brain.RealScreenSnapshotProvider
 import com.aion.host.brain.RoomBudgetGuard
 import com.aion.host.brain.RoomMemoryStore
@@ -31,6 +33,9 @@ abstract class BrainModule {
 
     @Binds
     abstract fun bindScreenSnapshotProvider(impl: RealScreenSnapshotProvider): ScreenSnapshotProvider
+
+    @Binds
+    abstract fun bindLlmIntentClassifier(impl: LiteRtIntentClassifier): LlmIntentClassifier
 
     companion object {
         // T-081/T-090 built FewShotBank as a plain :brain class with no Android/DI dependency of

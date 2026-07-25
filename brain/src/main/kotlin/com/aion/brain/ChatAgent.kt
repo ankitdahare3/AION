@@ -52,19 +52,33 @@ class ChatAgent(
 
 /**
  * T-150 — sits in the graph's "planner" slot (AionGraph's frozen `run()` always starts there):
- * classifies the goal via [IntentClassifier] and delegates CHAT goals to [ChatAgent], everything
- * else to the real [PlannerAgent]. Only CHAT is diverted for now — INFO_QUERY deliberately stays
- * on the automation path, since "battery kitni hai" is answerable by reading the real device
- * screen but NOT from an LLM's own knowledge; diverting it would trade a working (if slow) real
- * answer for a confidently wrong one.
+ * classifies the goal and delegates CHAT goals to [ChatAgent], everything else to the real
+ * [PlannerAgent]. Only CHAT is diverted for now — INFO_QUERY deliberately stays on the automation
+ * path, since "battery kitni hai" is answerable by reading the real device screen but NOT from an
+ * LLM's own knowledge; diverting it would trade a working (if slow) real answer for a confidently
+ * wrong one.
+ *
+ * 2026 backend upgrade — [llmClassifier] is tried first when present; the keyword [IntentClassifier]
+ * is the fallback both when no real classifier was wired in (the default) AND when the real one
+ * returns null or throws for this particular utterance (model unavailable on this device, or an
+ * unparseable reply) — a device that can't run the local LLM never loses functionality, it just
+ * doesn't gain the extra accuracy. Found via a real user-reported bug: "kaisa hai" (a casual "how
+ * are you") fell through the keyword classifier's greeting whitelist into INFO_QUERY, routing to
+ * the real automation planner instead of a chat reply — patched at the keyword layer too, but a
+ * real classifier is a structurally better fix for the whole class of "phrasing nobody thought to
+ * list" bugs than an ever-growing keyword whitelist.
  */
 class IntentRoutingAgent(
     private val chat: Agent,
     private val planner: Agent,
+    private val llmClassifier: LlmIntentClassifier? = null,
 ) : Agent {
-    override suspend fun step(s: AgentState): AgentState =
-        when (IntentClassifier.classify(s.goal)) {
+    override suspend fun step(s: AgentState): AgentState {
+        val llmIntent = llmClassifier?.let { runCatching { it.classify(s.goal) }.getOrNull() }
+        val intent = llmIntent ?: IntentClassifier.classify(s.goal)
+        return when (intent) {
             Intent.CHAT -> chat.step(s)
             else -> planner.step(s)
         }
+    }
 }

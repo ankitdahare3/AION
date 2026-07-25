@@ -49,6 +49,13 @@ biometric = "1.1.0"
 # ONNX Runtime Mobile (T-011, DOC-011 §1): ships prebuilt per-ABI native libs inside the AAR itself —
 # no NDK/native toolchain setup needed on our side. 1.27.0 is the current stable release.
 onnxruntime = "1.27.0"
+# LiteRT-LM (2026 backend upgrade): Google AI Edge's on-device LLM inference library — the real
+# local-LLM classifier DOC-004 §3 always specified, deferred at T-032 as a native-build wall.
+# MediaPipe's older `tasks-genai` (what most guides still point to) is now maintenance-only per its
+# own docs, migrating to this; ships a prebuilt AAR (no NDK toolchain needed here either — same
+# "no native build wall" reasoning as onnxruntime above). 0.14.0 is the latest published release
+# (2026-07-08, confirmed via Google Maven).
+litertlm = "0.14.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -91,6 +98,7 @@ mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition"
 mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
+litertlm-android = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version.ref = "litertlm" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

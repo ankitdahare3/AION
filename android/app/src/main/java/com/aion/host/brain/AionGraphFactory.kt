@@ -6,6 +6,7 @@ import com.aion.brain.ChatAgent
 import com.aion.brain.ExecutorAgent
 import com.aion.brain.FewShotBank
 import com.aion.brain.IntentRoutingAgent
+import com.aion.brain.LlmIntentClassifier
 import com.aion.brain.MemoryStore
 import com.aion.brain.MemoryWriterAgent
 import com.aion.brain.PlannerAgent
@@ -55,6 +56,11 @@ import javax.inject.Singleton
  * `while (... && !s.done)` loop — meant the graph always ended one node too early and
  * `MemoryWriterAgent` never actually ran, for any goal, ever. Fixed on the `ResponderAgent`/
  * `MemoryWriterAgent` side (see their own doc comments) rather than touching the frozen graph.
+ *
+ * 2026 backend upgrade — [llmClassifier] (a real [LiteRtIntentClassifier]) is now passed to
+ * [IntentRoutingAgent], which tries it before falling back to the keyword classifier. See
+ * [LiteRtIntentClassifier]'s own doc for why there's no automated model download and why this may
+ * not do anything at all on a device that can't run it — that's by design, not a bug.
  */
 @Singleton
 class AionGraphFactory
@@ -64,6 +70,11 @@ class AionGraphFactory
         private val memoryStore: MemoryStore,
         private val screenSnapshotProvider: ScreenSnapshotProvider,
         private val fewShotBank: FewShotBank,
+        // Default matches how every other optional :brain dependency in this class is handled
+        // (fewShotBank/memoryStore precedent) — Hilt always supplies the real bound instance
+        // explicitly regardless of this default; it only keeps existing plain-Kotlin test call
+        // sites (that predate this param) compiling unchanged.
+        private val llmClassifier: LlmIntentClassifier = LlmIntentClassifier { null },
     ) {
         fun create(
             router: ProviderRouter,
@@ -83,6 +94,7 @@ class AionGraphFactory
                                         memoryStore = memoryStore,
                                         screenSnapshotProvider = screenSnapshotProvider,
                                     ),
+                                llmClassifier = llmClassifier,
                             ),
                         "executor" to ExecutorAgent(pluginManager),
                         "reflector" to ReflectorAgent(fewShotBank),

@@ -144,4 +144,50 @@ class IntentRoutingAgentTest {
             assertTrue(planner.called)
             assertEquals("planner handled it", result.response)
         }
+
+    @Test
+    fun `a real llmClassifier result is used instead of the keyword classifier`() =
+        runTest {
+            val chat = RecordingAgent("chat handled it")
+            val planner = RecordingAgent("planner handled it")
+            // The keyword classifier alone would send "battery batao" to the planner (SIMPLE_ACTION-
+            // shaped) — a real llmClassifier result overriding that to CHAT proves it's genuinely
+            // consulted first, not just present-but-ignored.
+            val router = IntentRoutingAgent(chat, planner, llmClassifier = LlmIntentClassifier { Intent.CHAT })
+
+            val result = router.step(AgentState(goal = "battery batao"))
+
+            assertTrue(chat.called)
+            assertFalse(planner.called)
+            assertEquals("chat handled it", result.response)
+        }
+
+    @Test
+    fun `a null llmClassifier result falls back to the keyword classifier`() =
+        runTest {
+            val chat = RecordingAgent("chat handled it")
+            val planner = RecordingAgent("planner handled it")
+            val router = IntentRoutingAgent(chat, planner, llmClassifier = LlmIntentClassifier { null })
+
+            val result = router.step(AgentState(goal = "namaste AION"))
+
+            assertTrue(chat.called)
+            assertFalse(planner.called)
+            assertEquals("chat handled it", result.response)
+        }
+
+    @Test
+    fun `a throwing llmClassifier falls back to the keyword classifier instead of crashing the run`() =
+        runTest {
+            val chat = RecordingAgent("chat handled it")
+            val planner = RecordingAgent("planner handled it")
+            val throwingClassifier = LlmIntentClassifier { throw IllegalStateException("model not loaded") }
+            val router = IntentRoutingAgent(chat, planner, llmClassifier = throwingClassifier)
+
+            val result = router.step(AgentState(goal = "namaste AION"))
+
+            assertTrue(chat.called)
+            assertFalse(planner.called)
+            assertEquals("chat handled it", result.response)
+        }
 }

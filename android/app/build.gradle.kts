@@ -25,7 +25,19 @@ android {
         // Shizuku privatized the old direct newProcess() shell exec in recent api versions.
         aidl = true
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = "17"
+        // litertlm-android 0.14.0's Kotlin metadata is 2.3.0; this project is deliberately pinned
+        // to Kotlin 2.1.21 (see gradle/libs.versions.toml — Hilt/Ktor/AGP are ALL pinned back for
+        // the same reason: bumping Kotlin cascades into re-verifying that whole stack, a much
+        // bigger and riskier change than one new dependency). The flag only suppresses the
+        // metadata-version *warning* — litertlm-android's actual JVM bytecode is unaffected and
+        // loads/runs fine; there's no known Kotlin 2.3-only language feature at risk here since
+        // this library's Kotlin API surface (Engine/Conversation/data classes) is plain, no
+        // context-parameters/guard-conditions-era syntax. Revisit once this project's own Kotlin
+        // version naturally catches up.
+        freeCompilerArgs = freeCompilerArgs + "-Xskip-metadata-version-check"
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -73,6 +85,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.biometric)
     implementation(libs.onnxruntime.android)
+    implementation(libs.litertlm.android)
     // T-102 — GmailPlugin/TelegramPlugin (:brain) default-construct an HttpClient; that type must
     // be resolvable here even though :android:app never builds one itself.
     implementation(libs.ktor.client.core)
