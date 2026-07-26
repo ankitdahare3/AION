@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Download
@@ -58,6 +59,8 @@ fun SettingsScreen(
     onToggleVoice: () -> Unit,
     overlayRunning: Boolean,
     onToggleOverlay: () -> Unit,
+    bubbleRunning: Boolean,
+    onToggleBubble: () -> Unit,
     onExploreDevice: () -> Unit,
     modelDownloadState: ModelDownloader.State,
     onDownloadModel: () -> Unit,
@@ -142,6 +145,26 @@ fun SettingsScreen(
                         subtitle = if (overlayRunning) "Shown — tap to hide" else "Hidden — tap to show",
                         checked = overlayRunning,
                         onCheckedChange = { onToggleOverlay() },
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(
+                                    1.dp,
+                                ).background(AionColors.OutlineVariant.copy(alpha = 0.3f)),
+                    )
+                    ToggleRow(
+                        icon = Icons.Filled.BubbleChart,
+                        title = "Floating Assistant",
+                        subtitle =
+                            if (bubbleRunning) {
+                                "On — stays visible over other apps"
+                            } else {
+                                "Off — AION closes when you switch apps"
+                            },
+                        checked = bubbleRunning,
+                        onCheckedChange = { onToggleBubble() },
                     )
                     Box(
                         modifier =

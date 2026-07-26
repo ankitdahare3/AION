@@ -33,6 +33,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Owner-requested floating assistant bubble (AionBubbleService) — API 34+ requires a
+         foreground service type even for a generic overlay; "specialUse" + the declared subtype
+         below is the correct type when none of the other named types (mediaProjection, location,
+         etc.) fit a floating chat-head-style UI. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- T-121 finding — API 30+ package-visibility filtering made getLaunchIntentForPackage()
          (ActionDispatcher.launchApp, T-041) return null for nearly every installed app, including
@@ -98,6 +103,15 @@
             android:name=".voice.VoiceForegroundService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <service
+            android:name=".bubble.AionBubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="floating_voice_assistant_bubble" />
+        </service>
 
         <service
             android:name=".automation.AionAccessibilityService"

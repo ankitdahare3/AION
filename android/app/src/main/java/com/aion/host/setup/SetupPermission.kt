@@ -81,10 +81,13 @@ enum class SetupPermission(
             // before that existed, which made the wizard/Security Center nag for it forever even
             // after the owner actually granted it — same lookup pattern as NOTIFICATION_ACCESS.
             ACCESSIBILITY -> {
-                val enabled = Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+                val enabled =
+                    Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
                 val services =
-                    Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
-                enabled && services.contains(ComponentName(context, AionAccessibilityService::class.java).flattenToString())
+                    Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+                        ?: ""
+                enabled &&
+                    services.contains(ComponentName(context, AionAccessibilityService::class.java).flattenToString())
             }
             NOTIFICATION_ACCESS -> {
                 val enabled = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners") ?: ""

@@ -148,6 +148,11 @@ class ActionDispatcher
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 try {
                     service.startActivity(intent)
+                    // Owner-requested (Gemini-Live-style bubble): AION opening another app
+                    // shouldn't just disappear — no-ops if the owner turned it off or it's
+                    // already showing, see AionBubbleService.showIfEnabled's own KDoc.
+                    com.aion.host.bubble.AionBubbleService
+                        .showIfEnabled(service)
                     ActionResult.Success
                 } catch (e: android.content.ActivityNotFoundException) {
                     ActionResult.Failure("startActivity failed: ${e.message}")

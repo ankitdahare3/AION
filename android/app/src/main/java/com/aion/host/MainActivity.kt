@@ -57,6 +57,7 @@ import com.aion.host.brain.ModelDownloader
 import com.aion.host.brain.RealApprovalGate
 import com.aion.host.brain.RoomCheckpointer
 import com.aion.host.brain.VoiceCommandHistoryScreen
+import com.aion.host.bubble.AionBubbleService
 import com.aion.host.calendar.CalendarScreen
 import com.aion.host.communications.CommunicationsScreen
 import com.aion.host.devicestatus.DeviceStatusScreen
@@ -284,6 +285,7 @@ private fun AionApp(
     var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
     var overlayRunning by rememberSaveable { mutableStateOf(false) }
     var voiceRunning by rememberSaveable { mutableStateOf(false) }
+    var bubbleRunning by rememberSaveable { mutableStateOf(AionBubbleService.isShowing) }
     // Which conversation ChatScreen is showing — null means an unsaved "New Chat" that gets a
     // real conversation row the moment its first message is sent (see ChatHistoryStore).
     var activeConversationId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -339,6 +341,15 @@ private fun AionApp(
                                     overlayRunning = !overlayRunning
                                     val intent = Intent(context, KillSwitchOverlayService::class.java)
                                     if (overlayRunning) context.startService(intent) else context.stopService(intent)
+                                },
+                                bubbleRunning = bubbleRunning,
+                                onToggleBubble = {
+                                    bubbleRunning = !bubbleRunning
+                                    AionBubbleService.setEnabled(context, bubbleRunning)
+                                    if (bubbleRunning) {
+                                        val intent = Intent(context, AionBubbleService::class.java)
+                                        ContextCompat.startForegroundService(context, intent)
+                                    }
                                 },
                                 onExploreDevice = {
                                     DeviceExplorationScheduler.triggerNow(context)
