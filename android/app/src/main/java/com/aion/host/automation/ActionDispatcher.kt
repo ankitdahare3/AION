@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Intent
 import android.graphics.Path
+import android.net.Uri
 import android.os.Bundle
 import android.view.accessibility.AccessibilityNodeInfo
 import com.aion.host.security.AuditLogger
@@ -161,6 +162,69 @@ class ActionDispatcher
 
         /** DOC-009 §3's `notification(action)` primitive — see class doc: it's just a tap. */
         suspend fun notificationAction(ref: ElementRef): ActionResult = tap(TapTarget.Element(ref))
+
+        // PalmClaw-inspired (owner-requested research): a direct Intent reaches these in one step
+        // instead of a tap/longPress sequence hunting for the right on-screen element — faster and
+        // less likely to mis-resolve an element. ACTION_DIAL/ACTION_SENDTO only ever PRE-FILL the
+        // dialer/Messages screen; the owner still taps call/send themselves, nothing is dispatched
+        // autonomously, matching this project's own "no side effect without a human's own tap" rule
+        // even though these are declared sideEffect=false at the plan-step level.
+
+        suspend fun callNumber(number: String): ActionResult =
+            withService("callNumber", """{"number":"$number"}""") { service ->
+                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    service.startActivity(intent)
+                    ActionResult.Success
+                } catch (e: android.content.ActivityNotFoundException) {
+                    ActionResult.Failure("startActivity failed: ${e.message}")
+                }
+            }
+
+        suspend fun sendSms(
+            number: String,
+            message: String,
+        ): ActionResult =
+            withService("sendSms", """{"number":"$number","length":${message.length}}""") { service ->
+                val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number"))
+                intent.putExtra("sms_body", message)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    service.startActivity(intent)
+                    ActionResult.Success
+                } catch (e: android.content.ActivityNotFoundException) {
+                    ActionResult.Failure("startActivity failed: ${e.message}")
+                }
+            }
+
+        suspend fun openUrl(url: String): ActionResult =
+            withService("openUrl", """{"url":"$url"}""") { service ->
+                val normalized = if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalized))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    service.startActivity(intent)
+                    ActionResult.Success
+                } catch (e: android.content.ActivityNotFoundException) {
+                    ActionResult.Failure("startActivity failed: ${e.message}")
+                }
+            }
+
+        suspend fun searchWeb(query: String): ActionResult =
+            withService("searchWeb", """{"query":"$query"}""") { service ->
+                val intent =
+                    Intent(Intent.ACTION_WEB_SEARCH).apply {
+                        putExtra(android.app.SearchManager.QUERY, query)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                try {
+                    service.startActivity(intent)
+                    ActionResult.Success
+                } catch (e: android.content.ActivityNotFoundException) {
+                    ActionResult.Failure("startActivity failed: ${e.message}")
+                }
+            }
 
         private suspend fun withService(
             actionName: String,

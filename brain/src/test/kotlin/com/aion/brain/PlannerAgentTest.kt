@@ -240,6 +240,37 @@ class PlannerAgentTest {
             assertFalse(result.done)
         }
 
+    @Test
+    fun `a sendSms step's extra field (the message body) is parsed through, not dropped`() =
+        runTest {
+            val goal = "Rahul ko bolo I'm running late"
+            val plan =
+                """[{"action":"sendSms","target":"Rahul","expected":"Messages open with the text ready",""" +
+                    """"sideEffect":false,"extra":"I'm running late"}]"""
+            val provider = scriptedProvider(mapOf(goal to plan))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = goal))
+
+            assertEquals(1, result.plan.size)
+            assertEquals("sendSms", result.plan[0].action)
+            assertEquals("I'm running late", result.plan[0].extra)
+        }
+
+    @Test
+    fun `a step with no extra field parses with extra null, not a crash`() =
+        runTest {
+            val goal = "khol karo YouTube"
+            val plan =
+                """[{"action":"launchApp","target":"com.google.android.youtube","expected":"YouTube open",""" +
+                    """"sideEffect":false}]"""
+            val provider = scriptedProvider(mapOf(goal to plan))
+
+            val result = PlannerAgent(routerFor(provider)).step(AgentState(goal = goal))
+
+            assertEquals(1, result.plan.size)
+            assertEquals(null, result.plan[0].extra)
+        }
+
     private fun memoryStoreOf(vararg memories: Memory) =
         object : MemoryStore {
             override suspend fun insert(memory: Memory) = 0L

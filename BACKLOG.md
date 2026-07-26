@@ -452,3 +452,19 @@
   per-step state) is the one concrete telemetry gap still open: `ProviderRouter.route()` and
   `PluginManager.route()` calls aren't currently written to `AuditLogger`, unlike `ActionDispatcher`'s
   calls which already are.
+
+- **`ExecutorAgent` can only ever route to `UIAutomationPlugin` — every other named built-in plugin
+  (Gmail, Telegram, Phone/SMS, Browser, System, Contacts, Calendar, Files) is structurally
+  unreachable from a normal chat goal, only from the separate skill-authored path (`SkillExecutor`).
+  Found while building T-176's direct-device-tool actions (`callContact`/`sendSms`/`openUrl`/
+  `searchWeb`) — deliberately added those to `UIAutomationPlugin` itself rather than to
+  `PhoneSmsPlugin`/`BrowserPlugin` (where the exact same stubs already existed, with comments
+  admitting they weren't wired) specifically because the planner can't reach those plugins at all.
+  This leaves `PhoneSmsPlugin.call_contact`/`send_sms` and `BrowserPlugin.search_web`/`open_url`
+  still un-implemented placeholders, AND Gmail/Telegram's real, working tools reachable only if a
+  Skill is authored for them by hand — not from "AION, check my email" as a plain chat goal. A real
+  fix needs either `ExecutorAgent`/`PlanStep` to carry a target plugin id (a genuine `PlanStep`
+  shape change beyond T-176's single optional field, plus `PlannerAgent`'s prompt would need to
+  enumerate registered plugin tool schemas dynamically instead of the current hardcoded action list)
+  or accepting that non-`UIAutomationPlugin` tools stay skill-only by design — a real architectural
+  decision, not something to default into silently.

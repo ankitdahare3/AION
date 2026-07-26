@@ -6,6 +6,9 @@ data class PlanStep(
     val target: String,
     val expected: String,
     val sideEffect: Boolean,
+    // Second value a handful of direct-device-tool actions need alongside `target` (e.g. sendSms's
+    // message body) — optional and defaulted so every existing 4-arg call site stays unaffected.
+    val extra: String? = null,
 )
 
 data class AgentState(

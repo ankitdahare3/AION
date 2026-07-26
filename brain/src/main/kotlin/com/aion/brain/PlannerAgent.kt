@@ -10,6 +10,7 @@ private data class PlanStepDto(
     val target: String,
     val expected: String,
     val sideEffect: Boolean = false,
+    val extra: String? = null,
 )
 
 /**
@@ -162,7 +163,7 @@ class PlannerAgent(
         return try {
             Json
                 .decodeFromString<List<PlanStepDto>>(jsonArray)
-                .map { PlanStep(it.action, it.target, it.expected, it.sideEffect) }
+                .map { PlanStep(it.action, it.target, it.expected, it.sideEffect, it.extra) }
                 .takeIf { it.isNotEmpty() }
         } catch (e: SerializationException) {
             null
@@ -191,9 +192,9 @@ class PlannerAgent(
         const val PERSONA =
             "You are AION's planner. Given a goal, output ONLY a JSON array of steps. No prose, no " +
                 "markdown fences, no explanation — the JSON array is the entire response.\n\n" +
-                "Every step MUST be an object with ALL of these fields:\n" +
+                "Every step MUST be an object with these fields (\"extra\" is optional, only sendSms uses it):\n" +
                 """{"action": "<action name>", "target": "<target>", "expected": "<what is true after """ +
-                """this step succeeds>", "sideEffect": <true|false>}""" +
+                """this step succeeds>", "sideEffect": <true|false>, "extra": "<optional second value>"}""" +
                 "\n\nExample response:\n" +
                 """[{"action":"launchApp","target":"com.android.settings","expected":"Settings app """ +
                 """open","sideEffect":false},""" +
@@ -203,15 +204,25 @@ class PlannerAgent(
                 "- longPress: same as tap, but a long press\n" +
                 "- launchApp: target = the app's Android package name (e.g. com.android.settings)\n" +
                 "- globalAction: target = one of BACK, HOME, RECENTS\n" +
+                "- callContact: target = the phone number to dial. Opens the dialer with the number ready — " +
+                "the owner still taps the call button themselves, nothing is dialed automatically.\n" +
+                "- sendSms: target = the recipient's phone number, extra = the message text. Opens Messages " +
+                "with both filled in — the owner still taps send themselves, nothing is sent automatically.\n" +
+                "- openUrl: target = the URL to open.\n" +
+                "- searchWeb: target = the search query.\n" +
+                "Prefer callContact/sendSms/openUrl/searchWeb over a tap/longPress sequence whenever the goal " +
+                "is exactly one of those — one direct step beats hunting for the right on-screen element.\n" +
                 "Set sideEffect true for any step that is irreversible or outward-facing (sending, deleting, " +
-                "posting, purchasing). Typing text into a field is NOT currently possible — never plan a step " +
-                "that requires it; if the goal cannot be done with only tap/longPress/launchApp/globalAction, " +
-                "do your best with what's available rather than inventing an unsupported action."
+                "posting, purchasing) — callContact/sendSms only pre-fill a screen the owner must still " +
+                "confirm themselves, so they don't need sideEffect true just for that. Typing text into a " +
+                "field is NOT currently possible for tap-based steps — never plan a tap/longPress step that " +
+                "requires it; if the goal cannot be done with the actions above, do your best with what's " +
+                "available rather than inventing an unsupported action."
         const val REPAIR_HINT =
             "Your previous response was not valid JSON matching the schema. Output ONLY the JSON array this time."
         const val PLAN_SCHEMA =
             """{"type":"array","items":{"type":"object","properties":{"action":{"type":"string"},""" +
-                """"target":{"type":"string"},"expected":{"type":"string"},"sideEffect":{"type":"boolean"}},""" +
-                """"required":["action","target","expected"]}}"""
+                """"target":{"type":"string"},"expected":{"type":"string"},"sideEffect":{"type":"boolean"},""" +
+                """"extra":{"type":"string"}},"required":["action","target","expected"]}}"""
     }
 }

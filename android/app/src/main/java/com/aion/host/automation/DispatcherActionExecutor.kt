@@ -60,6 +60,10 @@ class DispatcherActionExecutor
             val result =
                 when (step.action.lowercase()) {
                     "launchapp" -> dispatcher.launchApp(step.target)
+                    "callcontact" -> dispatcher.callNumber(step.target)
+                    "sendsms" -> dispatcher.sendSms(step.target, step.extra.orEmpty())
+                    "openurl" -> dispatcher.openUrl(step.target)
+                    "searchweb" -> dispatcher.searchWeb(step.target)
                     "globalaction" -> {
                         val action =
                             GlobalAction.entries.find { it.name.equals(step.target, ignoreCase = true) }

@@ -83,6 +83,32 @@ class UIAutomationPlugin(
                         inputSchema = "{}",
                         description = "Performs a system-level navigation action (BACK/HOME/RECENTS)",
                     ),
+                    // PalmClaw-inspired (owner-requested research): a direct device tool instead of
+                    // simulating taps through an app's UI — see ActionDispatcher's own KDoc on each.
+                    ToolSchema(
+                        "callContact",
+                        sideEffect = false,
+                        inputSchema = "{}",
+                        description = "Opens the dialer pre-filled with a phone number",
+                    ),
+                    ToolSchema(
+                        "sendSms",
+                        sideEffect = false,
+                        inputSchema = "{}",
+                        description = "Opens Messages pre-filled with a recipient and message text",
+                    ),
+                    ToolSchema(
+                        "openUrl",
+                        sideEffect = false,
+                        inputSchema = "{}",
+                        description = "Opens a URL in the default browser",
+                    ),
+                    ToolSchema(
+                        "searchWeb",
+                        sideEffect = false,
+                        inputSchema = "{}",
+                        description = "Runs a web search for a query",
+                    ),
                 ),
             dna = DnaConfig(benchmark = "bench/uiautomation.yaml"),
         )
@@ -100,7 +126,8 @@ class UIAutomationPlugin(
             }
         val target = args["target"]?.jsonPrimitive?.content ?: ""
         val expected = args["expected"]?.jsonPrimitive?.content ?: ""
-        val step = PlanStep(call.name, target, expected, call.sideEffect)
+        val extra = args["extra"]?.jsonPrimitive?.content?.takeIf { it.isNotEmpty() }
+        val step = PlanStep(call.name, target, expected, call.sideEffect, extra)
 
         val outcome = executor.execute(step)
         return ToolResult(
@@ -116,7 +143,11 @@ class UIAutomationPlugin(
         /** Matches how [UIAutomationPlugin.execute] parses `argsJson` back out. */
         fun argsJsonFor(step: PlanStep): String =
             JsonObject(
-                mapOf("target" to JsonPrimitive(step.target), "expected" to JsonPrimitive(step.expected)),
+                mapOf(
+                    "target" to JsonPrimitive(step.target),
+                    "expected" to JsonPrimitive(step.expected),
+                    "extra" to JsonPrimitive(step.extra ?: ""),
+                ),
             ).toString()
     }
 }
