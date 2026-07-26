@@ -47,6 +47,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// T-173 — real crash/ANR bug: this screen's real-notification rows render in a plain (non-lazy)
+// Column, nested inside MockupScaffold's own verticalScroll Column (a LazyColumn there would throw
+// "infinite height" instead — checked before considering it). With AionNotificationListener
+// ingesting every notification unbounded in the background since T-137, this list can grow large
+// enough that composing every row at once, on the main thread, on every open, genuinely ANRs —
+// reproduced live on the owner's real device. Capping what's rendered is the safe fix within this
+// screen's own scope, without touching MemoryStore's shared interface (used by every other caller).
+private const val MAX_DISPLAYED_NOTIFICATIONS = 30
+
 @Composable
 fun NotificationsScreen(
     memoryStore: MemoryStore,
@@ -62,6 +71,7 @@ fun NotificationsScreen(
                 .getAllActive()
                 .filter { it.provenance == NotificationIngestion.PROVENANCE }
                 .sortedByDescending { it.created }
+                .take(MAX_DISPLAYED_NOTIFICATIONS)
     }
 
     MockupScaffold(
@@ -126,10 +136,11 @@ fun NotificationsScreen(
                                 color = AionColors.OnSurface,
                             )
                             Text(
-                                if (notifications.isNotEmpty()) {
-                                    "You have ${notifications.size} updates."
-                                } else {
-                                    "No new notifications."
+                                when {
+                                    notifications.isEmpty() -> "No new notifications."
+                                    notifications.size >= MAX_DISPLAYED_NOTIFICATIONS ->
+                                        "Showing the ${notifications.size} most recent updates."
+                                    else -> "You have ${notifications.size} updates."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AionColors.OnSurfaceVariant,

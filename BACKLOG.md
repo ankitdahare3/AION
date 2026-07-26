@@ -1,5 +1,18 @@
 # BACKLOG.md — Proposed work not yet in TASKS.md
 
+- **`memories` table grows unbounded from notification ingestion — no real cap, only dedup.**
+  Found 2026-07-26 diagnosing a real ANR on the owner's device (T-173): `AionNotificationListener`
+  (T-137) has been ingesting every notification, unbounded, since it was enabled, and
+  `MemoryConsolidator` (T-111) only soft-deletes near-duplicate TEXT via `TextSimilarity` — decay
+  only lowers `decayScore`/confidence over time, it never deletes anything just for being old.
+  Distinct notification content (different senders/messages/times) accumulates forever. T-173's
+  fix caps what `NotificationsScreen` RENDERS (30 most recent), which fixes the immediate ANR, but
+  the underlying table keeps growing regardless — `MemoryDao.getAllActive()` still loads every row
+  for every caller, not just this screen. Real fix needs one of: a genuine age/count-based
+  eviction policy for low-confidence/fully-decayed rows (not just dedup), or a provenance-scoped/
+  paginated query on `MemoryStore` itself — a real interface change, touches every caller, not
+  done unilaterally here.
+
 - **AionNotificationListener real ingestion logic** (android/app/src/main/java/com/aion/host/svc/AionNotificationListener.kt).
   Added 2026-07-09 as an empty shell purely so the "Notification access" PR-02 permission has a
   real component to grant (T-004). No task in TASKS.md currently owns building the actual
