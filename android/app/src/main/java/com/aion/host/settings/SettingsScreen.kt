@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -37,6 +40,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aion.host.brain.ModelDownloader
 import com.aion.host.ui.theme.AionColors
 import com.aion.host.ui.theme.GlassPanel
 import com.aion.host.ui.theme.MockupScaffold
@@ -55,6 +59,9 @@ fun SettingsScreen(
     overlayRunning: Boolean,
     onToggleOverlay: () -> Unit,
     onExploreDevice: () -> Unit,
+    modelDownloadState: ModelDownloader.State,
+    onDownloadModel: () -> Unit,
+    onOpenApiKeys: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
 ) {
@@ -170,7 +177,81 @@ fun SettingsScreen(
                 }
             }
 
+            Spacer(Modifier.height(32.dp))
+
+            // Section 3: LOCAL INTELLIGENCE — T-172, the in-app counterpart to the manual `adb
+            // push` model setup. Not a toggle: downloading a real ~600MB file is a deliberate,
+            // one-time action the owner takes, not an ambient background switch.
+            Text(
+                "LOCAL INTELLIGENCE",
+                style = MaterialTheme.typography.labelSmall,
+                color = AionColors.TertiaryContainer,
+                letterSpacing = 2.sp,
+                modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+            )
+            GlassPanel(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    ModelDownloadRow(modelDownloadState, onDownloadModel, onOpenApiKeys)
+                }
+            }
+
             Spacer(Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+private fun ModelDownloadRow(
+    state: ModelDownloader.State,
+    onDownload: () -> Unit,
+    onOpenApiKeys: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(
+                if (state is ModelDownloader.State.Done) Icons.Filled.CloudDone else Icons.Filled.Download,
+                AionColors.TertiaryContainer,
+            )
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("On-Device AI Model", style = MaterialTheme.typography.bodyLarge, color = AionColors.OnSurface)
+                Text(
+                    when (state) {
+                        is ModelDownloader.State.Idle -> "Not downloaded — real intent understanding needs this"
+                        is ModelDownloader.State.Downloading -> {
+                            val total = state.totalBytes
+                            if (total != null && total > 0) {
+                                val pct = (state.bytesDownloaded * 100 / total)
+                                "Downloading… $pct% (${state.bytesDownloaded / 1_000_000}MB / ${total / 1_000_000}MB)"
+                            } else {
+                                "Downloading… ${state.bytesDownloaded / 1_000_000}MB"
+                            }
+                        }
+                        is ModelDownloader.State.Done -> "Ready — used automatically, falls back if unavailable"
+                        is ModelDownloader.State.Failed -> state.message
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (state is ModelDownloader.State.Failed) {
+                            AionColors.Error
+                        } else {
+                            AionColors.OnSurfaceVariant
+                        },
+                )
+            }
+        }
+        when (state) {
+            is ModelDownloader.State.Idle -> TextButton(onClick = onDownload) { Text("Download") }
+            is ModelDownloader.State.Downloading -> CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            is ModelDownloader.State.Done -> {}
+            is ModelDownloader.State.Failed ->
+                TextButton(onClick = { if (state.message.contains("token")) onOpenApiKeys() else onDownload() }) {
+                    Text(if (state.message.contains("token")) "Add Token" else "Retry")
+                }
         }
     }
 }

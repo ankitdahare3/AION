@@ -30,9 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,6 +53,7 @@ import com.aion.host.brain.ChatHistoryScreen
 import com.aion.host.brain.ChatHistoryStore
 import com.aion.host.brain.ChatScreen
 import com.aion.host.brain.DeviceExplorationScheduler
+import com.aion.host.brain.ModelDownloader
 import com.aion.host.brain.RealApprovalGate
 import com.aion.host.brain.RoomCheckpointer
 import com.aion.host.brain.VoiceCommandHistoryScreen
@@ -98,6 +101,7 @@ import com.aion.host.usage.UsageStatsScreen
 import com.aion.host.voice.VoiceForegroundService
 import com.aion.host.weather.WeatherScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private enum class Screen {
@@ -183,6 +187,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var chatHistoryStore: ChatHistoryStore
 
+    @Inject
+    lateinit var modelDownloader: ModelDownloader
+
     private var resumeTrigger by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -213,6 +220,7 @@ class MainActivity : FragmentActivity() {
                     memoryStore,
                     checkpointer,
                     chatHistoryStore,
+                    modelDownloader,
                 )
             } else {
                 LockScreen(onUnlockTap = {
@@ -265,7 +273,10 @@ private fun AionApp(
     memoryStore: MemoryStore,
     checkpointer: RoomCheckpointer,
     chatHistoryStore: ChatHistoryStore,
+    modelDownloader: ModelDownloader,
 ) {
+    val scope = rememberCoroutineScope()
+    val modelDownloadState by modelDownloader.state.collectAsState()
     // Antigravity-audit finding, 2026-07-13: these were `remember`, so a config change (rotation,
     // dark-mode toggle) reset which screen you were on and which services you'd toggled on —
     // `rememberSaveable` survives that (Screen is a Kotlin enum, inherently Serializable via
@@ -333,6 +344,9 @@ private fun AionApp(
                                     DeviceExplorationScheduler.triggerNow(context)
                                     Toast.makeText(context, "Exploring device…", Toast.LENGTH_SHORT).show()
                                 },
+                                modelDownloadState = modelDownloadState,
+                                onDownloadModel = { scope.launch { modelDownloader.download() } },
+                                onOpenApiKeys = { screen = Screen.API_KEYS },
                                 modifier = Modifier.weight(1f),
                             )
                         Screen.AUDIT_LOG -> AuditLogScreen(auditLogger, modifier = Modifier.weight(1f))

@@ -28,6 +28,12 @@ enum class ProviderKey(
     // providers.yaml adapters that was still missing.
     ANTHROPIC("Anthropic API Key", "anthropic_api_key"),
 
+    // T-172 — ModelDownloader needs this to fetch the gated Gemma3-1B-IT .litertlm file on the
+    // owner's own behalf (their own HF account, their own accepted license) — a personal access
+    // token from huggingface.co/settings/tokens, same "paste your own key" flow as every other
+    // ProviderKey here, shown for free in SecretsScreen since it already iterates `entries`.
+    HUGGINGFACE_TOKEN("HuggingFace Access Token", "huggingface_token"),
+
     // T-102 — GmailPlugin expects a bare OAuth2 access token (no client id/secret flow built here,
     // BACKLOG.md); TelegramPlugin expects a bot token from @BotFather, a single static secret.
     GMAIL_ACCESS_TOKEN("Gmail Access Token", "gmail_access_token"),
