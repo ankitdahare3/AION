@@ -12,6 +12,7 @@ import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.aion.host.automation.AionAccessibilityService
 import com.aion.host.svc.AionNotificationListener
 
 /** PR-02 (DOC-002 §9) — one entry per required platform permission/status for the setup wizard. */
@@ -76,8 +77,15 @@ enum class SetupPermission(
                 val dpm = context.getSystemService(DevicePolicyManager::class.java)
                 dpm?.isDeviceOwnerApp(context.packageName) == true
             }
-            // No AccessibilityService is declared yet (ships in T-040), so nothing can be enabled.
-            ACCESSIBILITY -> false
+            // T-040 shipped AionAccessibilityService; this used to be a hardcoded `false` from
+            // before that existed, which made the wizard/Security Center nag for it forever even
+            // after the owner actually granted it — same lookup pattern as NOTIFICATION_ACCESS.
+            ACCESSIBILITY -> {
+                val enabled = Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+                val services =
+                    Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+                enabled && services.contains(ComponentName(context, AionAccessibilityService::class.java).flattenToString())
+            }
             NOTIFICATION_ACCESS -> {
                 val enabled = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners") ?: ""
                 enabled.contains(ComponentName(context, AionNotificationListener::class.java).flattenToString())

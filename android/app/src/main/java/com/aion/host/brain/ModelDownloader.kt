@@ -5,6 +5,7 @@ import com.aion.brain.providers.defaultProviderHttpClient
 import com.aion.host.security.ProviderKey
 import com.aion.host.security.SecretVault
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
@@ -27,11 +28,9 @@ import javax.inject.Singleton
  * this repo). Streams to a `.part` file and only renames to the real path on full success, so an
  * interrupted download is never mistaken for a real, loadable model.
  *
- * Real, honest, unverified-live risk: HuggingFace's `resolve` URL 302s to a separate CDN origin
- * (`cdn-lfs.huggingface.co`), and Ktor's default redirect handling keeps sending the `Authorization`
- * header across that redirect — some signed-URL CDNs reject an unexpected auth header on the final
- * hop. Not testable without a real token and a real network; if a download fails at that exact
- * point, that's the first thing to check.
+ * `defaultProviderHttpClient()` sets a global 30s `requestTimeoutMillis` sized for chat-completion
+ * calls; a 584MB model download takes far longer than that, so every real download was aborting
+ * partway through with a timeout exception. Overridden per-request below to actually finish.
  */
 @Singleton
 class ModelDownloader
@@ -75,6 +74,7 @@ class ModelDownloader
                 client
                     .prepareGet(MODEL_URL) {
                         header(HttpHeaders.Authorization, "Bearer $token")
+                        timeout { requestTimeoutMillis = DOWNLOAD_TIMEOUT_MS }
                     }.execute { response ->
                         if (!response.status.isSuccess()) {
                             error(
@@ -107,6 +107,11 @@ class ModelDownloader
 
         companion object {
             private const val DOWNLOAD_BUFFER_BYTES = 64 * 1024
+
+            // A 584MB model over a real mobile/wifi connection can take a while; the global
+            // 30s requestTimeoutMillis (sized for chat-completion calls) was aborting every
+            // real download partway through, which is what this overrides.
+            private const val DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000L
 
             // The one non-chip-specific variant on litert-community/Gemma3-1B-IT — matches
             // LiteRtIntentClassifier's Backend.CPU() choice, unlike the sm8xxx/mt69xx/Tensor-G5

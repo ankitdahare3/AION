@@ -475,8 +475,8 @@ private fun AionApp(
                                 AionNavItem(
                                     Icons.Filled.Settings,
                                     "Settings",
-                                    screen == Screen.API_KEYS,
-                                ) { screen = Screen.API_KEYS },
+                                    screen == Screen.SETTINGS,
+                                ) { screen = Screen.SETTINGS },
                             ),
                         onMicClick = { screen = Screen.CHAT },
                     )
