@@ -65,14 +65,24 @@ private val alwaysCanSpend =
         override fun record(cost: Double) {}
     }
 
-private fun scriptedProvider(text: String) =
+/**
+ * T-177: PlannerAgent is reactive now — one call per action decided, not one call for the whole
+ * plan — so a script needs one response per expected planner visit, in order. The last response
+ * repeats if the planner is (unexpectedly) called more times than scripted, rather than crashing
+ * the fake with an index-out-of-bounds and hiding the real assertion failure underneath.
+ */
+private fun scriptedProvider(vararg responses: String) =
     object : Provider {
         override val id = "scripted"
         override val tier = Tier.LOCAL
         override val caps = ProviderCaps()
+        private var callCount = 0
 
-        override suspend fun complete(req: BrainRequest) =
-            BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
+        override suspend fun complete(req: BrainRequest): BrainResult {
+            val text = responses.getOrElse(callCount) { responses.last() }
+            callCount++
+            return BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)
+        }
     }
 
 /** T-117: PlannerAgent's optional device-profile context — no memories needed for these graph-wiring tests. */
@@ -115,10 +125,12 @@ class AionGraphFactoryTest {
                     approvalService.pending.collect { req -> if (req != null) approvalService.resolve(req.id, true) }
                 }
 
-            val planJson =
-                """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false},""" +
-                    """{"action":"launchApp","target":"com.android.settings","expected":"Settings open","sideEffect":true}]"""
-            val router = ProviderRouter(listOf(scriptedProvider(planJson)), noopScoreStore, alwaysCanSpend)
+            val tapStep = """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]"""
+            val launchStep =
+                """[{"action":"launchApp","target":"com.android.settings","expected":"Settings open",""" +
+                    """"sideEffect":true}]"""
+            val router =
+                ProviderRouter(listOf(scriptedProvider(tapStep, launchStep, "[]")), noopScoreStore, alwaysCanSpend)
 
             val executed = mutableListOf<String>()
             val executor =
@@ -154,8 +166,8 @@ class AionGraphFactoryTest {
             checkpointer.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
             val approvalGate = com.aion.brain.ApprovalGate { it }
 
-            val planJson = """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]"""
-            val router = ProviderRouter(listOf(scriptedProvider(planJson)), noopScoreStore, alwaysCanSpend)
+            val tapStep = """[{"action":"tap","target":"Wi-Fi","expected":"Wi-Fi on","sideEffect":false}]"""
+            val router = ProviderRouter(listOf(scriptedProvider(tapStep, "[]")), noopScoreStore, alwaysCanSpend)
             val executor = ActionExecutor { ExecutionOutcome(success = true, observation = "ok") }
 
             val recordingMemoryStore =
@@ -234,9 +246,16 @@ class AionGraphFactoryTest {
 
             val approvalGate = RealApprovalGate(ApprovalGateService(AuditLogger(FakeAuditDao())))
 
-            val planJson =
+            val tapStep =
                 """[{"action":"tap","target":"Wi-Fi toggle","expected":"Wi-Fi on","sideEffect":false}]"""
-            val router = ProviderRouter(listOf(scriptedProvider(planJson)), noopScoreStore, alwaysCanSpend)
+            // 3 planner visits decide the same tap (2 fail, 1 succeeds), a 4th confirms done — see
+            // this file's scriptedProvider KDoc: PlannerAgent is reactive now, one call per action.
+            val router =
+                ProviderRouter(
+                    listOf(scriptedProvider(tapStep, tapStep, tapStep, "[]")),
+                    noopScoreStore,
+                    alwaysCanSpend,
+                )
 
             // Fails with the exact same E1_WRONG_ELEMENT-classifiable message twice in a row, then
             // succeeds on the third attempt. Under the old lastFailureCount-vs-list-size bug, the
@@ -288,6 +307,13 @@ class AionGraphFactoryTest {
                     override val caps = ProviderCaps()
 
                     override suspend fun complete(req: BrainRequest): BrainResult {
+                        // T-177: PlannerAgent folds the real outcome of the tap it JUST decided into
+                        // the next prompt (withRecentActions) — once that shows the correct tap
+                        // actually succeeded, a reactive planner reports the goal done instead of
+                        // tapping again forever.
+                        if (req.system.contains("ok:tap")) {
+                            return BrainResult(text = "[]", provider = id, latencyMs = 1, costUsd = 0.0)
+                        }
                         val target = if (req.system.contains("Previous mistakes")) "Wi-Fi toggle" else "WRONG_ELEMENT"
                         val text = """[{"action":"tap","target":"$target","expected":"Wi-Fi on","sideEffect":false}]"""
                         return BrainResult(text = text, provider = id, latencyMs = 1, costUsd = 0.0)

@@ -19,8 +19,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * T-053/T-077 — assembles a real [AionGraph] per DOC-004 §2's standard flow: planner → executor →
- * (fail → reflector → planner) → responder → memory_writer → END. `router`/`pluginManager`/
+ * T-053/T-077 — assembles a real [AionGraph]. Flow since T-177's reactive-loop rewrite: planner
+ * (decide ONE action) → executor (run it) → planner (decide the next one, freshly re-sensed) →
+ * ... repeating until planner appends [PlannerAgent.DONE_STEP] → responder → memory_writer → END;
+ * a failed executor step routes to reflector → planner instead. DOC-004 §2's diagram still shows
+ * the older upfront-plan shape — not yet updated to match, tracked in BACKLOG.md. `router`/`pluginManager`/
  * `approval` are all passed in per-call rather than Hilt-injected: a real [ProviderRouter] needs
  * live provider API keys (T-031 🧍HC-3), `pluginManager` must already have
  * `com.aion.plugin.uiautomation` registered+enabled (see [BuiltInPluginRegistry]) — a real
@@ -101,10 +104,24 @@ class AionGraphFactory
                         "responder" to ResponderAgent(),
                         "memory_writer" to MemoryWriterAgent(memoryStore),
                     ),
+                // T-177 (owner-directed: real comparable agents complete multi-step tasks more
+                // reliably with a sense-think-act loop than a commit-upfront plan) — "planner"
+                // (PlannerAgent, via IntentRoutingAgent) now decides exactly ONE action per visit
+                // instead of the whole plan, so "executor" no longer self-loops through a
+                // pre-built list of remaining steps — it goes straight back to "planner" for a
+                // fresh, re-sensed decision after every single action, until PlannerAgent itself
+                // appends PlannerAgent.DONE_STEP (goal accomplished) instead of a new real step.
                 route = { node, s ->
                     when (node) {
-                        "planner" -> "executor"
+                        "planner" ->
+                            if (s.plan.lastOrNull()?.action == PlannerAgent.DONE_ACTION) "responder" else "executor"
                         "executor" ->
+                            // T-177 finding while wiring the reactive loop: a side-effect step's
+                            // FIRST visit only requests approval (ExecutorAgent.pendingApprovalForStep)
+                            // without executing — s.toolResults hasn't grown to match s.plan yet.
+                            // Revisiting "executor" (not "planner") is what actually performs the
+                            // now-approved action, exactly like the pre-T-177 self-loop did.
+                            //
                             // No stateful counter needed: ReflectorAgent always clears s.failures
                             // back to emptyList() before any retry (its own KDoc), and ExecutorAgent
                             // only ever appends to it on the exact call that just failed — so a
@@ -115,9 +132,9 @@ class AionGraphFactory
                             // failure (size goes 0->1 again, never exceeding the stale watermark) —
                             // found via T-121's real benchmark data (BACKLOG.md).
                             when {
+                                s.toolResults.size < s.plan.size -> "executor"
                                 s.failures.isNotEmpty() -> "reflector"
-                                s.currentStep >= s.plan.size -> "responder"
-                                else -> "executor"
+                                else -> "planner"
                             }
                         "reflector" -> if (s.done) AionGraph.END else "planner"
                         "responder" -> "memory_writer"
@@ -126,5 +143,11 @@ class AionGraphFactory
                 },
                 approval = approval,
                 checkpoints = checkpointer,
+                // T-177 — reactive mode costs 2 stepCount per real device action (one planner visit
+                // to decide it, one executor visit to run it) where upfront-plan mode only cost 1
+                // stepCount per action after a single planning call. Doubled from AionGraph's own
+                // default (30) to keep this project's existing ~15-action practical ceiling
+                // (T-121's benchmark expectations, ChatScreen's 5-minute wall clock) intact.
+                maxSteps = 60,
             )
     }

@@ -468,3 +468,11 @@
   enumerate registered plugin tool schemas dynamically instead of the current hardcoded action list)
   or accepting that non-`UIAutomationPlugin` tools stay skill-only by design — a real architectural
   decision, not something to default into silently.
+
+- **`DOC-004_...md`'s own flow diagram still shows the pre-T-177 shape** ("planner → executor →
+  (fail → reflector → planner) → responder → memory_writer → END", implying one planning call
+  produces the whole plan). T-177 rewrote this to a reactive sense-think-act loop (planner decides
+  ONE action, executor runs it, back to planner for a fresh decision, repeating until planner
+  signals done) — `AionGraphFactory`'s own class KDoc documents the real current flow accurately,
+  but the source doc itself wasn't touched. Update DOC-004's diagram to match next time that doc is
+  touched for any other reason — not urgent enough alone to justify a docs-only commit today.
