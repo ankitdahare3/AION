@@ -6,15 +6,22 @@ package com.aion.brain
  * got planned as a device-automation task. Answers via a real [ProviderRouter] CHAT call and ends
  * the run — per AionGraph's frozen `run()` loop, whoever sets `done=true` must also author
  * `response` (same rule ReflectorAgent/PlannerAgent already follow).
+ *
+ * [memoryStore] (T-178, optional — same "wired only where a real caller exists" pattern as
+ * [PlannerAgent]'s own optional dependencies) — this agent never read [MemoryStore] at all before
+ * this: a casual chat reply had no memory of anything the owner told AION previously. Folds in the
+ * same [RelevantMemories]/[Bm25Ranker] relevance-ranked retrieval [PlannerAgent] uses for planning,
+ * so "what's my flight time" or similar continuity actually works in plain conversation too.
  */
 class ChatAgent(
     private val router: ProviderRouter,
+    private val memoryStore: MemoryStore? = null,
 ) : Agent {
     override suspend fun step(s: AgentState): AgentState {
         val req =
             BrainRequest(
                 taskType = TaskType.CHAT,
-                system = PERSONA,
+                system = withRelevantMemories(PERSONA, s),
                 messages = listOf(Msg("user", s.goal)),
             )
         return try {
@@ -35,6 +42,16 @@ class ChatAgent(
                 response = ResponsePhrasing.forFailure(FailureCause.UNKNOWN, ResponsePhrasing.isHinglish(s.goal)),
             )
         }
+    }
+
+    private suspend fun withRelevantMemories(
+        base: String,
+        s: AgentState,
+    ): String {
+        val relevant = RelevantMemories.find(memoryStore, s.goal)
+        if (relevant.isEmpty()) return base
+        val lines = relevant.joinToString("\n") { "- ${it.text}" }
+        return "$base\n\nThings you (AION) remember about the owner that might be relevant right now:\n$lines"
     }
 
     private companion object {

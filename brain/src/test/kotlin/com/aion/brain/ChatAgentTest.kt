@@ -102,6 +102,61 @@ class ChatAgentTest {
                 result.response,
             )
         }
+
+    // T-178 — ChatAgent never read MemoryStore at all before this; a relevant past fact now
+    // grounds even a plain conversational reply, not just device-automation planning.
+    @Test
+    fun `a relevant past memory is folded into the chat system prompt`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(text = "9am se hai", provider = id, latencyMs = 1, costUsd = 0.0)
+                    }
+                }
+            val store =
+                object : MemoryStore {
+                    override suspend fun insert(memory: Memory) = 0L
+
+                    override suspend fun getAllActive() =
+                        listOf(
+                            Memory(
+                                kind = MemoryKind.FACT,
+                                text = "owner's flight leaves at 9am tomorrow",
+                                confidence = 1.0,
+                                provenance = "test",
+                                created = 1,
+                                accessed = 0,
+                                decayScore = 1.0,
+                            ),
+                        )
+
+                    override suspend fun update(memory: Memory) {}
+
+                    override suspend fun softDelete(id: Long) {}
+                }
+
+            ChatAgent(routerFor(provider), memoryStore = store).step(AgentState(goal = "flight kab hai"))
+
+            assertTrue(capturedSystem!!.contains("flight leaves at 9am"))
+        }
+
+    @Test
+    fun `no memoryStore at all still replies normally, no crash`() =
+        runTest {
+            val agent = ChatAgent(routerFor(scriptedChatProvider("theek hoon")))
+
+            val result = agent.step(AgentState(goal = "kaise ho"))
+
+            assertTrue(result.done)
+            assertEquals("theek hoon", result.response)
+        }
 }
 
 private class RecordingAgent(

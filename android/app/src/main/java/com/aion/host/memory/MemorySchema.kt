@@ -124,6 +124,10 @@ interface MemoryDao {
     @Query("SELECT * FROM memories WHERE deletedSoft = 0 ORDER BY created DESC")
     suspend fun getAllActive(): List<MemoryEntity>
 
+    /** T-178 — a real bounded query, not `getAllActive()` + in-app truncation (BACKLOG.md's T-173 finding). */
+    @Query("SELECT * FROM memories WHERE deletedSoft = 0 ORDER BY created DESC LIMIT :limit")
+    suspend fun getRecentActive(limit: Int): List<MemoryEntity>
+
     /** T-111 — consolidation's merge/decay updates go through this, not a raw DAO write elsewhere. */
     @Update
     suspend fun update(memory: MemoryEntity)

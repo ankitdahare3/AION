@@ -129,13 +129,29 @@ class PlannerAgent(
         repairHint: Boolean,
     ): String {
         val withApps = withKnownApps(if (repairHint) "$PERSONA\n$REPAIR_HINT" else PERSONA)
-        val withScreen = withCurrentScreen(withApps)
+        val withMemories = withRelevantMemories(withApps, s)
+        val withScreen = withCurrentScreen(withMemories)
         val withHistory = withRecentActions(withScreen, s)
         val counterExamples = fewShotBank?.examplesFor(s.goal).orEmpty()
         if (counterExamples.isEmpty()) return withHistory
         val warnings =
             counterExamples.joinToString("\n") { "- Plan ${it.badPlanJson} was WRONG for this goal: ${it.reason}" }
         return "$withHistory\n\nPrevious mistakes for this exact goal — do NOT repeat them:\n$warnings"
+    }
+
+    // T-178 (owner-directed: "add LangChain" — the one genuinely missing, LangChain-associated
+    // capability is relevance-ranked memory retrieval; see RelevantMemories/Bm25Ranker's own KDocs
+    // for why this is BM25 lexical ranking, not neural embeddings, and why that's the honest,
+    // scoped choice here) — folds relevant past FACT/PREF memories into planning, not just recency
+    // (withKnownApps' PROFILE-only apps list) or the current screen.
+    private suspend fun withRelevantMemories(
+        base: String,
+        s: AgentState,
+    ): String {
+        val relevant = RelevantMemories.find(memoryStore, s.goal)
+        if (relevant.isEmpty()) return base
+        val lines = relevant.joinToString("\n") { "- ${it.text}" }
+        return "$base\n\nThings AION remembers that might be relevant to this goal:\n$lines"
     }
 
     private suspend fun withCurrentScreen(base: String): String {

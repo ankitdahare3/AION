@@ -19,6 +19,9 @@ class RoomMemoryStore
 
         override suspend fun getAllActive(): List<Memory> = dao.getAllActive().map { it.toMemory() }
 
+        override suspend fun getRecentActive(limit: Int): List<Memory> =
+            dao.getRecentActive(limit).map { it.toMemory() }
+
         override suspend fun update(memory: Memory) = dao.update(memory.toEntity())
 
         override suspend fun softDelete(id: Long) = dao.softDelete(id)

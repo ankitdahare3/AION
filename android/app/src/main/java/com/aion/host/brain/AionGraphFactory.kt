@@ -89,7 +89,7 @@ class AionGraphFactory
                     mapOf(
                         "planner" to
                             IntentRoutingAgent(
-                                chat = ChatAgent(router),
+                                chat = ChatAgent(router, memoryStore = memoryStore),
                                 planner =
                                     PlannerAgent(
                                         router,

@@ -476,3 +476,22 @@
   signals done) — `AionGraphFactory`'s own class KDoc documents the real current flow accurately,
   but the source doc itself wasn't touched. Update DOC-004's diagram to match next time that doc is
   touched for any other reason — not urgent enough alone to justify a docs-only commit today.
+
+- **Real neural-embedding-based memory search (DOC-010 §2/§4's actual spec, FR-M03 P0) — still not
+  built.** T-178 shipped `Bm25Ranker`/`RelevantMemories` instead: real, well-established lexical
+  relevance ranking (a genuine upgrade over blind recency, and over `TextSimilarity`'s Jaccard
+  presence/absence matching that `MemoryConsolidator`/`SkillMatcher`/`RepeatedTaskDetector` already
+  use), but it is NOT vector/semantic search — it can't match a query and a memory that share no
+  literal words but mean the same thing (e.g. "flight" vs. "plane ticket"). The doc-specified real
+  fix needs an on-device embedding model, which hits the exact same wall T-032/T-061 already
+  deferred (BACKLOG's own long-standing entry) for the same class of reason. Revisit once a real
+  on-device embedder becomes practical — LiteRT-LM (T-171) is already integrated for intent
+  classification and may turn out to support embedding extraction too, worth checking first before
+  reaching for a second, separate model/runtime.
+
+- **`getRecentActive`'s 200-row candidate pool (T-178) is a fixed cap, not a fix for the underlying
+  unbounded-table-growth problem T-173 already flagged.** It keeps `RelevantMemories`'s own BM25
+  scan bounded and real at the SQL layer (`LIMIT`, not `getAllActive()` + in-app truncation), but
+  the `memories` table itself still grows forever from notification ingestion with no eviction
+  policy — a real fix (age/count-based eviction, or a provenance-scoped query) is still open, same
+  as T-173 already recorded.

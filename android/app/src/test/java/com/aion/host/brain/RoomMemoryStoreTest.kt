@@ -25,6 +25,8 @@ private class FakeMemoryDao : MemoryDao {
                 it.deletedSoft
             }.sortedByDescending { it.created }
 
+    override suspend fun getRecentActive(limit: Int): List<MemoryEntity> = getAllActive().take(limit)
+
     override suspend fun update(memory: MemoryEntity) {
         val i = rows.indexOfFirst { it.id == memory.id }
         rows[i] = memory
@@ -105,5 +107,32 @@ class RoomMemoryStoreTest {
             store.softDelete(id)
 
             assertTrue(store.getAllActive().isEmpty())
+        }
+
+    // T-178 — getRecentActive is meant to be a real bound at the query layer (BACKLOG.md's T-173
+    // finding), not getAllActive() + in-app truncation, so it must actually cap the result size.
+    @Test
+    fun `getRecentActive returns at most the requested limit, newest first`() =
+        runTest {
+            val store = RoomMemoryStore(FakeMemoryDao())
+            repeat(5) { i ->
+                store.insert(
+                    Memory(
+                        kind = MemoryKind.FACT,
+                        text = "memory $i",
+                        confidence = 1.0,
+                        provenance = "chat",
+                        created = i.toLong(),
+                        accessed = 0,
+                        decayScore = 1.0,
+                    ),
+                )
+            }
+
+            val recent = store.getRecentActive(2)
+
+            assertEquals(2, recent.size)
+            assertEquals("memory 4", recent[0].text)
+            assertEquals("memory 3", recent[1].text)
         }
 }

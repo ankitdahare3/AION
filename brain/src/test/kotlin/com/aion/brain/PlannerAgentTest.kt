@@ -271,6 +271,56 @@ class PlannerAgentTest {
             assertEquals(null, result.plan[0].extra)
         }
 
+    // T-178 — relevant FACT/PREF memories (not just PROFILE known-apps) ground planning too now,
+    // ranked by real BM25 relevance to the goal, not just recency.
+    @Test
+    fun `a relevant past FACT memory is folded into the system prompt, ranked over an irrelevant one`() =
+        runTest {
+            var capturedSystem: String? = null
+            val provider =
+                object : Provider {
+                    override val id = "capture"
+                    override val tier = Tier.LOCAL
+                    override val caps = ProviderCaps()
+
+                    override suspend fun complete(req: BrainRequest): BrainResult {
+                        capturedSystem = req.system
+                        return BrainResult(
+                            text = """[{"action":"tap","target":"x","expected":"y","sideEffect":false}]""",
+                            provider = id,
+                            latencyMs = 1,
+                            costUsd = 0.0,
+                        )
+                    }
+                }
+            val store =
+                memoryStoreOf(
+                    Memory(
+                        kind = MemoryKind.FACT,
+                        text = "owner's flight leaves at 9am tomorrow from gate 12",
+                        confidence = 1.0,
+                        provenance = "test",
+                        created = 1,
+                        accessed = 0,
+                        decayScore = 1.0,
+                    ),
+                    Memory(
+                        kind = MemoryKind.PREF,
+                        text = "owner prefers dark mode everywhere",
+                        confidence = 1.0,
+                        provenance = "test",
+                        created = 2,
+                        accessed = 0,
+                        decayScore = 1.0,
+                    ),
+                )
+            val agent = PlannerAgent(routerFor(provider), memoryStore = store)
+
+            agent.step(AgentState(goal = "what time is my flight"))
+
+            assertTrue(capturedSystem!!.contains("flight leaves at 9am"))
+        }
+
     private fun memoryStoreOf(vararg memories: Memory) =
         object : MemoryStore {
             override suspend fun insert(memory: Memory) = 0L
